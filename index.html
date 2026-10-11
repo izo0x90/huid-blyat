@@ -357,50 +357,140 @@
       }
     }
 
-    // --- Lemmings Walking & Cascading Down Terminal Lines ---
+    // --- Lemmings Walking, Cascading & Farming Potatoes ---
     class Lemming {
       constructor(canvasWidth) {
-        this.reset(canvasWidth);
+        this.reset(canvasWidth, false);
       }
-      reset(canvasWidth) {
-        this.x = Math.random() * (canvasWidth - 300) + 40;
-        this.y = 55 + Math.random() * 20;
+      reset(canvasWidth, isTitle = false) {
+        this.x = isTitle ? (Math.random() * (canvasWidth - 160) + 80) : (Math.random() * (canvasWidth - 300) + 40);
+        this.y = isTitle ? 618 : (55 + Math.random() * 20);
         this.vx = (Math.random() > 0.5 ? 1 : -1) * (0.7 + Math.random() * 0.6);
         this.vy = 0;
-        this.onGround = false;
+        this.onGround = isTitle;
         this.currentLineIndex = -1;
         this.onPrompt = false;
         this.anim = Math.floor(Math.random() * 100);
         this.color = ['#00ff66', '#00e5ff', '#ffea00', '#ff007f', '#b388ff'][Math.floor(Math.random() * 5)];
+
+        // Potato Farming States: 'walk', 'dig', 'carry', 'celebrate'
+        this.state = 'walk';
+        this.farmTimer = 0;
+        this.hasSack = false;
+        this.dirtMound = 0;
       }
       kick() {
         if (this.onPrompt || this.y > 450) {
           this.onGround = false;
           this.onPrompt = false;
           this.currentLineIndex = -1;
+          this.state = 'walk';
+          this.farmTimer = 0;
           this.vy = -7.5 - Math.random() * 4.5;
           this.vx = (Math.random() - 0.5) * 6;
         }
       }
-      update(canvasWidth, canvasHeight, terminalLines, promptY, screenShake) {
+      update(canvasWidth, canvasHeight, terminalLines, promptY, screenShake, onHarvest, isTitle = false) {
         this.anim++;
 
-        // Screen shake knocks them off!
+        // Screen shake knocks them off & cancels digging
         if (screenShake > 4 && this.onGround && Math.random() < 0.2) {
           this.onGround = false;
           this.onPrompt = false;
           this.currentLineIndex = -1;
+          this.state = 'walk';
+          this.farmTimer = 0;
           this.vy = -2.5 - Math.random() * 3;
           this.vx = (Math.random() - 0.5) * 4;
         }
 
+        // --- Title Screen Walking & Farming Ground ---
+        if (isTitle) {
+          this.y = 618;
+          this.onGround = true;
+
+          if (this.state === 'dig') {
+            this.farmTimer--;
+            this.dirtMound = Math.min(6, this.dirtMound + 0.1);
+            if (this.farmTimer <= 0) {
+              this.hasSack = true;
+              this.state = 'carry';
+              this.vx = (this.x > canvasWidth / 2) ? 0.9 : -0.9;
+            }
+            return true;
+          } else if (this.state === 'celebrate') {
+            this.farmTimer--;
+            if (this.farmTimer <= 0) {
+              this.state = 'walk';
+            }
+          } else if (this.state === 'carry') {
+            this.x += this.vx;
+            if ((this.vx > 0 && this.x > canvasWidth - 120) || (this.vx < 0 && this.x < 120)) {
+              this.hasSack = false;
+              this.state = 'celebrate';
+              this.farmTimer = 35;
+              this.vy = -3.5;
+              this.vx = -this.vx;
+              if (onHarvest) onHarvest(this.x, this.y);
+            }
+          } else {
+            // 'walk' state
+            this.x += this.vx;
+            if (this.x < 60) { this.x = 60; this.vx = Math.abs(this.vx); }
+            if (this.x > canvasWidth - 60) { this.x = canvasWidth - 60; this.vx = -Math.abs(this.vx); }
+
+            if (!this.hasSack && Math.random() < 0.0035 && this.x > 140 && this.x < canvasWidth - 140) {
+              this.state = 'dig';
+              this.farmTimer = 65 + Math.floor(Math.random() * 35);
+              this.dirtMound = 1;
+            }
+          }
+          return true;
+        }
+
+        // --- Terminal Screen Walking & Farming Behavior ---
         const charW = 8.4;
         const lineBaseY = 75;
         const lineH = 22;
 
         if (this.onGround) {
+          if (this.state === 'dig') {
+            this.farmTimer--;
+            this.dirtMound = Math.min(6, this.dirtMound + 0.1);
+            if (this.farmTimer <= 0) {
+              this.hasSack = true;
+              this.state = 'carry';
+              this.vx = (this.x > canvasWidth / 2) ? 0.9 : -0.9;
+            }
+            return true;
+          } else if (this.state === 'celebrate') {
+            this.farmTimer--;
+            if (this.farmTimer <= 0) {
+              this.state = 'walk';
+            }
+          } else if (this.state === 'carry') {
+            if ((this.vx > 0 && this.x > canvasWidth - 190) || (this.vx < 0 && this.x < 60)) {
+              this.hasSack = false;
+              this.state = 'celebrate';
+              this.farmTimer = 30;
+              this.vy = -3.0;
+              this.onGround = false;
+              this.vx = -this.vx;
+              if (onHarvest) onHarvest(this.x, this.y);
+            }
+          } else if (this.state === 'walk' && !this.hasSack) {
+            if (Math.random() < 0.0035 && this.x > 80 && this.x < canvasWidth - 220) {
+              this.state = 'dig';
+              this.farmTimer = 60 + Math.floor(Math.random() * 30);
+              this.dirtMound = 1;
+              return true;
+            }
+          }
+        }
+
+        if (this.onGround) {
           if (this.onPrompt) {
-            this.y = promptY - 34; // walk along the active prompt top edge
+            this.y = promptY - 34;
             this.x += this.vx;
             if (this.x < 30) { this.x = 30; this.vx = Math.abs(this.vx); }
             if (this.x > canvasWidth - 40) { this.x = canvasWidth - 40; this.vx = -Math.abs(this.vx); }
@@ -410,7 +500,6 @@
             this.y = lineBaseY + (this.currentLineIndex * lineH) - 10;
             this.x += this.vx;
 
-            // Walked off the end of the text line -> FALL down to line below!
             if (this.x > endX) {
               this.onGround = false;
               this.vy = 0.5;
@@ -419,7 +508,6 @@
               this.x = 28;
               this.vx = Math.abs(this.vx);
             } else if (Math.random() < 0.003) {
-              // Occasional drop through code spaces/trapdoors
               this.onGround = false;
               this.vy = 0.8;
             }
@@ -429,11 +517,10 @@
         }
 
         if (!this.onGround) {
-          this.vy += 0.28; // gravity
+          this.vy += 0.28;
           this.x += this.vx * 0.85;
           this.y += this.vy;
 
-          // Check landing on lines below
           if (this.vy > 0) {
             for (let i = 0; i < terminalLines.length; i++) {
               const targetY = lineBaseY + (i * lineH) - 10;
@@ -451,7 +538,6 @@
               }
             }
 
-            // Check landing on active prompt
             const promptTop = promptY - 34;
             if (!this.onGround && this.y >= promptTop - 6 && this.y <= promptTop + 8) {
               if (this.x >= 20 && this.x <= canvasWidth - 30) {
@@ -465,7 +551,6 @@
           }
         }
 
-        // Keep inside horizontal bounds
         if (this.x < 20) { this.x = 20; this.vx = Math.abs(this.vx); }
         if (this.x > canvasWidth - 30) { this.x = canvasWidth - 30; this.vx = -Math.abs(this.vx); }
 
@@ -474,21 +559,76 @@
       draw(ctx) {
         ctx.save();
         ctx.translate(Math.round(this.x), Math.round(this.y));
-        // Green hair (classic Lemming)
+
+        // Digging patch animation
+        if (this.state === 'dig') {
+          // Soil mound
+          ctx.fillStyle = '#6d4c41';
+          ctx.beginPath();
+          ctx.ellipse(5, 12, 8, 3, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#3e2723';
+          ctx.fillRect(2, 11, 2, 2);
+          ctx.fillRect(7, 12, 2, 2);
+
+          // Flying dirt particles
+          const digAnim = (this.anim % 8);
+          if (digAnim < 4) {
+            ctx.fillStyle = '#8d6e63';
+            ctx.fillRect(-2 - digAnim * 2, 6 - digAnim * 2, 2, 2);
+            ctx.fillRect(11 + digAnim * 2, 5 - digAnim * 2, 2, 2);
+          }
+
+          // Shovel swing
+          const swing = Math.sin(this.anim * 0.45);
+          ctx.strokeStyle = '#d7ccc8';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(4, 7);
+          ctx.lineTo(8 + swing * 4, 12 + swing * 2);
+          ctx.stroke();
+
+          // Potato peeking out when almost done digging
+          if (this.farmTimer < 25) {
+            ctx.fillStyle = '#ffb300';
+            ctx.beginPath();
+            ctx.ellipse(5, 10 - (25 - this.farmTimer) * 0.25, 3, 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // Classic Lemming body
         ctx.fillStyle = '#00ff66';
         ctx.fillRect(2, 0, 6, 3);
-        // Face
         ctx.fillStyle = '#ffe0b2';
         ctx.fillRect(3, 3, 5, 3);
-        // Eye
         ctx.fillStyle = '#000';
         ctx.fillRect(this.vx > 0 ? 6 : 3, 4, 2, 2);
-        // Shirt
         ctx.fillStyle = this.color;
         ctx.fillRect(2, 6, 6, 4);
+
+        // Burlap Potato Sack on back
+        if (this.hasSack) {
+          const sackX = this.vx > 0 ? -4 : 8;
+          ctx.fillStyle = '#8d6e63';
+          ctx.beginPath();
+          ctx.ellipse(sackX + 2, 8, 4, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#5d4037';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Knot and golden potato top
+          ctx.fillStyle = '#ffb300';
+          ctx.fillRect(sackX + 1, 3, 2, 2);
+          ctx.fillStyle = '#ffca28';
+          ctx.fillRect(sackX + 1, 4, 3, 2);
+        }
+
         // Legs
         ctx.fillStyle = '#3f51b5';
-        if (this.onGround) {
+        if (this.onGround && this.state !== 'dig') {
           const leg = Math.sin(this.anim * 0.45);
           ctx.fillRect(2, 10, 2, 3 + leg);
           ctx.fillRect(6, 10, 2, 3 - leg);
@@ -560,9 +700,12 @@
         this.avatarQuote = 'da_append(&da, item);';
         this.quoteTimer = 120;
 
-        // Modals
-        this.viewMode = 'terminal'; // 'terminal', 'hall_of_fame'
+        // Modals & View Modes
+        this.viewMode = 'title'; // 'title', 'terminal', 'hall_of_fame'
+        this.previousViewMode = 'title';
         this.scoresList = JSON.parse(localStorage.getItem('huid_leaderboard') || '[]');
+        this.potatoesHarvested = parseInt(localStorage.getItem('tatr_potatoes') || '0', 10);
+        this.titleAnim = 0;
 
         // Lemmings
         this.lemmings = [];
@@ -610,18 +753,22 @@
 
       setupButtons() {
         this.buttons = [
-          { id: 'btn_yes',   key: '[ Y ]', label: 'APPROVE', x: 25,  y: 638, w: 155, h: 26, keyColor: '#ffffff', actColor: '#00ff66', border: '#183822', badgeBg: '#0a1d12', bg: '#06120a' },
-          { id: 'btn_no',    key: '[ N ]', label: 'REJECT',  x: 188, y: 638, w: 155, h: 26, keyColor: '#ffffff', actColor: '#ff4455', border: '#3d1c22', badgeBg: '#220c10', bg: '#120508' },
-          { id: 'btn_pause', key: '[ P ]', label: 'PAUSE',   x: 351, y: 638, w: 155, h: 26, keyColor: '#ffffff', actColor: '#00e5ff', border: '#163640', badgeBg: '#0d222a', bg: '#061217' },
-          { id: 'btn_hof',   key: '[ H ]', label: 'TOP 10',  x: 514, y: 638, w: 155, h: 26, keyColor: '#ffffff', actColor: '#ffea00', border: '#3b3414', badgeBg: '#231e0a', bg: '#131106' },
-          { id: 'btn_mute',  key: '[ M ]', label: 'AUDIO',   x: 677, y: 638, w: 158, h: 26, keyColor: '#ffffff', actColor: '#a78bfa', border: '#2d1f4d', badgeBg: '#1b1230', bg: '#0e091a' }
+          { id: 'btn_yes',   key: '[ Y ]', label: 'APPROVE', x: 20,  y: 638, w: 132, h: 26, keyColor: '#ffffff', actColor: '#00ff66', border: '#183822', badgeBg: '#0a1d12', bg: '#06120a' },
+          { id: 'btn_no',    key: '[ N ]', label: 'REJECT',  x: 157, y: 638, w: 132, h: 26, keyColor: '#ffffff', actColor: '#ff4455', border: '#3d1c22', badgeBg: '#220c10', bg: '#120508' },
+          { id: 'btn_pause', key: '[ P ]', label: 'PAUSE',   x: 294, y: 638, w: 132, h: 26, keyColor: '#ffffff', actColor: '#00e5ff', border: '#163640', badgeBg: '#0d222a', bg: '#061217' },
+          { id: 'btn_hof',   key: '[ H ]', label: 'TOP 10',  x: 431, y: 638, w: 132, h: 26, keyColor: '#ffffff', actColor: '#ffea00', border: '#3b3414', badgeBg: '#231e0a', bg: '#131106' },
+          { id: 'btn_title', key: '[ Q ]', label: 'TITLE',   x: 568, y: 638, w: 132, h: 26, keyColor: '#ffffff', actColor: '#ffb300', border: '#3d2b12', badgeBg: '#231808', bg: '#130d04' },
+          { id: 'btn_mute',  key: '[ M ]', label: 'AUDIO',   x: 705, y: 638, w: 135, h: 26, keyColor: '#ffffff', actColor: '#a78bfa', border: '#2d1f4d', badgeBg: '#1b1230', bg: '#0e091a' }
         ];
       }
 
       setupLemmings(count = 6) {
         this.lemmings = [];
+        const isTitle = (this.viewMode === 'title');
         for (let i = 0; i < count; i++) {
-          this.lemmings.push(new Lemming(1000));
+          const lem = new Lemming(1000);
+          lem.reset(1000, isTitle);
+          this.lemmings.push(lem);
         }
       }
 
@@ -849,14 +996,68 @@
       }
 
       toggleHallOfFame() {
-        this.viewMode = (this.viewMode === 'terminal') ? 'hall_of_fame' : 'terminal';
         if (this.viewMode === 'hall_of_fame') {
+          this.viewMode = this.previousViewMode || 'title';
+        } else {
+          this.previousViewMode = this.viewMode;
+          this.viewMode = 'hall_of_fame';
+          if (this.score > 0) {
+            this.saveScoreToLeaderboard(false);
+          }
+        }
+      }
+
+      startGame() {
+        this.viewMode = 'terminal';
+        this.score = 0;
+        this.collisionsThisSec = 0;
+        this.multiplier = 1.0;
+        this.pointVelocity = 1.0;
+        this.consecutiveSecs = 0;
+        this.lastSec = -1;
+        this.terminalLines = [
+          { text: "Linux tsoding-box 6.8.0-huid x86_64 GNU/Linux", color: "#888888" },
+          { text: "TATR: Potato Farming Simulator - Collider v2.0 initialized.", color: "#888888" },
+          { text: "✦ HUID collisions abound ✦", color: "#00e5ff" },
+          { text: "Type [Y] to approve creation & generate high-velocity collisions.", color: "#00e5ff" },
+          { text: "WARNING: Watch out for [TRAP] lines. Reject them with [N]!", color: "#ffea00" },
+          { text: "----------------------------------------------------------------------", color: "#336633" }
+        ];
+        this.nextPrompt();
+        this.setAvatarQuote("Harvest initiated! da_append(&da, item);", "normal", 90);
+        this.sound.playJackpot(2);
+        this.setupLemmings(6);
+      }
+
+      returnToTitle() {
+        if (this.score > 0) {
           this.saveScoreToLeaderboard(false);
+        }
+        this.viewMode = 'title';
+        this.isPaused = false;
+        this.setAvatarQuote("Welcome back to TATR! Ready to harvest?", "smile", 120);
+        this.setupLemmings(6);
+      }
+
+      handlePotatoHarvest(x, y) {
+        this.potatoesHarvested++;
+        localStorage.setItem('tatr_potatoes', String(this.potatoesHarvested));
+        const bonus = Math.round(50 * this.multiplier);
+        this.score += bonus;
+        if (this.score > this.highScore) {
+          this.highScore = this.score;
+          localStorage.setItem('huid_high_score', String(this.highScore));
+        }
+        this.spawnText('🥔 +1 POTATO! (+' + bonus + ')', x - 30, y - 25, '#ffca28');
+        this.sound.playCoin(1.8);
+        this.spawnSparks(12, x, y, '#ffb300');
+        if (Math.random() < 0.25) {
+          this.setAvatarQuote("Fresh potato harvested!", "smug", 70);
         }
       }
 
       copyBragToClipboard() {
-        const text = '🏆 I scored ' + this.score.toLocaleString() + ' points with ' + this.peakCollisions + ' collisions/sec in HUID BLYAT! Can you beat my Tsoding collider?';
+        const text = '🏆 I scored ' + this.score.toLocaleString() + ' points with ' + this.peakCollisions + ' collisions/sec in TATR: Potato Farming Simulator! Can you beat my Tsoding collider?';
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text);
           this.spawnText('COPIED TO CLIPBOARD!', 420, 320, '#00e5ff');
@@ -888,9 +1089,43 @@
             return;
           }
 
+          // In Hall of Fame view, key presses return back
+          if (this.viewMode === 'hall_of_fame') {
+            if (e.key === 'c' || e.key === 'C') {
+              this.copyBragToClipboard();
+            } else if (e.key === 'h' || e.key === 'H' || e.key === 'Tab' || e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              this.toggleHallOfFame();
+            }
+            return;
+          }
+
+          // In Title view
+          if (this.viewMode === 'title') {
+            if (e.key === ' ' || e.key === 'Enter' || e.key === 'y' || e.key === 'Y') {
+              e.preventDefault();
+              this.startGame();
+              return;
+            } else if (e.key === 'h' || e.key === 'H' || e.key === 'Tab') {
+              e.preventDefault();
+              this.toggleHallOfFame();
+              return;
+            } else if (e.key === 'm' || e.key === 'M') {
+              this.sound.toggleMute();
+              return;
+            }
+          }
+
+          // In Active Terminal Gameplay
           if (e.key === 'p' || e.key === 'P') {
             e.preventDefault();
             this.togglePause();
+            return;
+          }
+
+          if (e.key === 'q' || e.key === 'Q') {
+            e.preventDefault();
+            this.returnToTitle();
             return;
           }
 
@@ -926,12 +1161,20 @@
           const x = (clientX - rect.left) * scaleX;
           const y = (clientY - rect.top) * scaleY;
 
+          // Check cyber buttons row
           for (const btn of this.buttons) {
             if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
-              if (btn.id === 'btn_yes') this.handleYesAction();
+              if (btn.id === 'btn_yes') {
+                if (this.viewMode === 'title') this.startGame();
+                else this.handleYesAction();
+              }
               else if (btn.id === 'btn_no') this.handleNoAction();
               else if (btn.id === 'btn_pause') this.togglePause();
               else if (btn.id === 'btn_hof') this.toggleHallOfFame();
+              else if (btn.id === 'btn_title') {
+                if (this.viewMode === 'terminal') this.returnToTitle();
+                else if (this.viewMode === 'hall_of_fame') this.toggleHallOfFame();
+              }
               else if (btn.id === 'btn_mute') this.sound.toggleMute();
               return;
             }
@@ -939,7 +1182,15 @@
 
           if (this.viewMode === 'hall_of_fame') {
             if (y > 520) this.copyBragToClipboard();
-            else this.viewMode = 'terminal';
+            else this.toggleHallOfFame();
+            return;
+          }
+
+          if (this.viewMode === 'title') {
+            // Clicking anywhere above buttons starts the game
+            if (y < 630) {
+              this.startGame();
+            }
             return;
           }
 
@@ -957,6 +1208,7 @@
       }
 
       update(dt) {
+        this.titleAnim++;
         if (this.isPaused) return;
 
         const now = new Date();
@@ -992,11 +1244,12 @@
           }
         }
 
+        const isTitle = (this.viewMode === 'title');
         for (const lem of this.lemmings) {
-          const alive = lem.update(1000, 680, this.terminalLines, 575, this.screenShake);
+          const alive = lem.update(1000, 680, isTitle ? [] : this.terminalLines, isTitle ? 618 : 575, this.screenShake, (x, y) => this.handlePotatoHarvest(x, y), isTitle);
           if (!alive) {
-            this.spawnSparks(8, lem.x, 600, '#00ff66');
-            lem.reset(1000);
+            this.spawnSparks(8, lem.x, isTitle ? 618 : 600, '#00ff66');
+            lem.reset(1000, isTitle);
           }
         }
 
@@ -1024,7 +1277,12 @@
         this.drawScanlines(ctx);
         this.drawStatusBar(ctx);
 
-        if (this.viewMode === 'terminal') {
+        if (this.viewMode === 'title') {
+          this.drawTitleScreen(ctx);
+          for (const lem of this.lemmings) lem.draw(ctx);
+          for (const p of this.particles) p.draw(ctx);
+          this.drawButtons(ctx);
+        } else if (this.viewMode === 'terminal') {
           this.drawTerminalBuffer(ctx);
           this.drawActivePrompt(ctx);
           this.drawTsodingCam(ctx);
@@ -1054,36 +1312,43 @@
         ctx.fillText('[' + this.currentHuidStr + ']', 25, 33);
 
         ctx.fillStyle = '#33ff55';
-        ctx.fillText('SCORE:', 245, 33);
+        ctx.fillText('SCORE:', 230, 33);
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(this.score.toLocaleString(), 295, 33);
+        ctx.fillText(this.score.toLocaleString(), 280, 33);
 
         ctx.fillStyle = '#88ff88';
-        ctx.fillText('HIGH: ' + this.highScore.toLocaleString(), 390, 33);
+        ctx.fillText('HIGH: ' + this.highScore.toLocaleString(), 370, 33);
+
+        ctx.fillStyle = '#ffca28';
+        ctx.fillText('🥔 ' + this.potatoesHarvested, 475, 33);
 
         ctx.fillStyle = '#ffea00';
-        ctx.fillText('MULT: ' + this.multiplier.toFixed(1) + 'x', 510, 33);
+        ctx.fillText('MULT: ' + this.multiplier.toFixed(1) + 'x', 545, 33);
 
-        const velW = Math.min(1.0, this.pointVelocity / 15) * 60;
+        const velW = Math.min(1.0, this.pointVelocity / 15) * 50;
         ctx.fillStyle = '#00ff66';
-        ctx.fillRect(595, 23, velW, 10);
+        ctx.fillRect(630, 23, velW, 10);
         ctx.strokeStyle = '#228833';
-        ctx.strokeRect(595, 23, 60, 10);
+        ctx.strokeRect(630, 23, 50, 10);
 
         ctx.fillStyle = '#00e5ff';
-        ctx.fillText('COLL/S: ' + this.collisionsThisSec, 670, 33);
+        ctx.fillText('COLL/S: ' + this.collisionsThisSec, 695, 33);
 
-        const secW = (this.activeSecondMs / 1000) * 110;
+        const secW = (this.activeSecondMs / 1000) * 85;
         ctx.fillStyle = '#112911';
-        ctx.fillRect(755, 23, 110, 12);
+        ctx.fillRect(775, 23, 85, 12);
         ctx.fillStyle = (this.activeSecondMs > 800) ? '#ff3344' : '#00ff66';
-        ctx.fillRect(755, 23, secW, 12);
+        ctx.fillRect(775, 23, secW, 12);
         ctx.strokeStyle = '#227722';
-        ctx.strokeRect(755, 23, 110, 12);
+        ctx.strokeRect(775, 23, 85, 12);
 
         ctx.fillStyle = '#888888';
         ctx.font = '11px Consolas, Courier, monospace';
-        ctx.fillText(this.activeSecondMs + 'ms', 875, 32);
+        ctx.fillText(this.activeSecondMs + 'ms', 870, 32);
+
+        ctx.fillStyle = (this.viewMode === 'title') ? '#ffb300' : '#00ff66';
+        ctx.font = 'bold 11px Consolas, Courier, monospace';
+        ctx.fillText((this.viewMode === 'title') ? '[TATR_IDLE]' : '[LIVE]', 920, 32);
       }
 
       drawTerminalBuffer(ctx) {
@@ -1267,6 +1532,246 @@
         ctx.restore();
       }
 
+      drawTitleScreen(ctx) {
+        ctx.save();
+
+        // 80s Synthwave Perspective Grid Background
+        const gridGrad = ctx.createLinearGradient(0, 360, 0, 640);
+        gridGrad.addColorStop(0, '#100326');
+        gridGrad.addColorStop(0.5, '#240645');
+        gridGrad.addColorStop(1, '#050110');
+        ctx.fillStyle = gridGrad;
+        ctx.fillRect(0, 380, 1000, 255);
+
+        // Grid horizontal lines receding into distance
+        ctx.strokeStyle = 'rgba(255, 0, 128, 0.35)';
+        ctx.lineWidth = 1;
+        const horizonY = 390;
+        for (let i = 1; i <= 9; i++) {
+          const lineY = horizonY + Math.pow(i / 9, 2.2) * 235;
+          ctx.beginPath();
+          ctx.moveTo(0, lineY);
+          ctx.lineTo(1000, lineY);
+          ctx.stroke();
+        }
+
+        // Perspective vertical lines
+        const vanishingX = 500;
+        const vanishingY = horizonY - 10;
+        for (let vx = -200; vx <= 1200; vx += 70) {
+          ctx.beginPath();
+          ctx.moveTo(vanishingX, vanishingY);
+          ctx.lineTo(vx, 635);
+          ctx.stroke();
+        }
+
+        // Neon Horizon Glow
+        ctx.strokeStyle = '#00e5ff';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.moveTo(0, horizonY);
+        ctx.lineTo(1000, horizonY);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Twinkling 80s Cyber Stars
+        ctx.fillStyle = '#ffea00';
+        for (let s = 0; s < 16; s++) {
+          const sx = (s * 67 + 35) % 960 + 20;
+          const sy = 55 + (s * 31) % 180;
+          const starAlpha = 0.3 + 0.5 * Math.sin(this.titleAnim * 0.05 + s);
+          ctx.globalAlpha = starAlpha;
+          ctx.fillRect(sx, sy, 2, 2);
+          if (s % 3 === 0) {
+            ctx.fillRect(sx - 1, sy, 4, 2);
+            ctx.fillRect(sx, sy - 1, 2, 4);
+          }
+        }
+        ctx.globalAlpha = 1.0;
+
+        // --- 80s RETRO POTATO LOGO ---
+        const potCenterX = 500;
+        const potCenterY = 128;
+
+        // Potato Outer Neon Glow
+        ctx.shadowColor = '#ffb300';
+        ctx.shadowBlur = 24;
+
+        // Organic Curved Potato Silhouette
+        const potGrad = ctx.createRadialGradient(potCenterX - 20, potCenterY - 15, 10, potCenterX, potCenterY, 95);
+        potGrad.addColorStop(0, '#ffe082');
+        potGrad.addColorStop(0.35, '#ffb300');
+        potGrad.addColorStop(0.7, '#e65100');
+        potGrad.addColorStop(1, '#5d2600');
+
+        ctx.fillStyle = potGrad;
+        ctx.strokeStyle = '#ffe57f';
+        ctx.lineWidth = 3.5;
+
+        ctx.beginPath();
+        ctx.moveTo(potCenterX - 95, potCenterY - 5);
+        ctx.bezierCurveTo(potCenterX - 100, potCenterY - 55, potCenterX - 45, potCenterY - 70, potCenterX + 15, potCenterY - 65);
+        ctx.bezierCurveTo(potCenterX + 85, potCenterY - 60, potCenterX + 115, potCenterY - 30, potCenterX + 105, potCenterY + 15);
+        ctx.bezierCurveTo(potCenterX + 95, potCenterY + 60, potCenterX + 40, potCenterY + 70, potCenterX - 25, potCenterY + 65);
+        ctx.bezierCurveTo(potCenterX - 85, potCenterY + 60, potCenterX - 92, potCenterY + 35, potCenterX - 95, potCenterY - 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Potato Dimples / Eyes
+        ctx.fillStyle = '#4e1d00';
+        const spots = [
+          [potCenterX - 55, potCenterY - 35, 4, 2.5],
+          [potCenterX - 20, potCenterY - 45, 3, 2],
+          [potCenterX + 50, potCenterY - 30, 4, 2.5],
+          [potCenterX - 65, potCenterY + 25, 4, 2.5],
+          [potCenterX + 25, potCenterY + 45, 3.5, 2],
+          [potCenterX + 70, potCenterY + 20, 3, 2]
+        ];
+        for (const [sx, sy, rx, ry] of spots) {
+          ctx.beginPath();
+          ctx.ellipse(sx, sy, rx, ry, 0.25, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Cute Green Sprout on top
+        ctx.fillStyle = '#00ff66';
+        ctx.beginPath();
+        ctx.ellipse(potCenterX + 8, potCenterY - 68, 5, 12, -0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(potCenterX + 20, potCenterY - 65, 4, 10, 0.45, 0, Math.PI * 2);
+        ctx.fill();
+
+        // --- 80s CHROME "TATR" TITLE ---
+        ctx.font = '900 66px "Impact", "Arial Black", Consolas, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // 80s Synthwave Dual Extrusion Shadows
+        ctx.fillStyle = '#ff007f';
+        ctx.fillText('TATR', potCenterX + 3, potCenterY + 3);
+        ctx.fillStyle = '#00e5ff';
+        ctx.fillText('TATR', potCenterX - 3, potCenterY - 3);
+
+        // Multi-stop Specular Chrome Gradient
+        const chromeGrad = ctx.createLinearGradient(0, potCenterY - 35, 0, potCenterY + 35);
+        chromeGrad.addColorStop(0.0, '#ffffff');
+        chromeGrad.addColorStop(0.48, '#e0f7fa');
+        chromeGrad.addColorStop(0.50, '#001a33');
+        chromeGrad.addColorStop(0.53, '#ffea00');
+        chromeGrad.addColorStop(0.80, '#ff6f00');
+        chromeGrad.addColorStop(1.0, '#311b92');
+
+        ctx.fillStyle = chromeGrad;
+        ctx.fillText('TATR', potCenterX, potCenterY);
+
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3.5;
+        ctx.strokeText('TATR', potCenterX, potCenterY);
+
+        // --- SUBTITLE & TAGLINE ---
+        ctx.font = 'bold 20px Consolas, Courier, monospace';
+        ctx.fillStyle = '#ffea00';
+        ctx.shadowColor = '#ffea00';
+        ctx.shadowBlur = 10;
+        ctx.fillText('POTATO FARMING SIMULATOR', potCenterX, potCenterY + 80);
+        ctx.shadowBlur = 0;
+
+        // User Subtitle: "✦ HUID collisions abound ✦"
+        const pulse = 0.65 + 0.35 * Math.sin(this.titleAnim * 0.08);
+        ctx.font = 'bold 15px Consolas, Courier, monospace';
+        ctx.fillStyle = `rgba(0, 229, 255, ${pulse.toFixed(2)})`;
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 8;
+        ctx.fillText('✦ HUID collisions abound ✦', potCenterX, potCenterY + 104);
+        ctx.shadowBlur = 0;
+
+        // --- INSTRUCTIONS & PROTOCOLS PANEL ---
+        const panelX = 90;
+        const panelY = 252;
+        const panelW = 820;
+        const panelH = 278;
+
+        ctx.fillStyle = 'rgba(4, 14, 8, 0.94)';
+        ctx.fillRect(panelX, panelY, panelW, panelH);
+        ctx.strokeStyle = '#1b7a2b';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+        // Corner accents
+        ctx.fillStyle = '#00ff66';
+        ctx.fillRect(panelX - 2, panelY - 2, 5, 5);
+        ctx.fillRect(panelX + panelW - 3, panelY - 2, 5, 5);
+        ctx.fillRect(panelX - 2, panelY + panelH - 3, 5, 5);
+        ctx.fillRect(panelX + panelW - 3, panelY + panelH - 3, 5, 5);
+
+        // Panel Header Bar
+        ctx.fillStyle = '#082612';
+        ctx.fillRect(panelX, panelY, panelW, 30);
+        ctx.strokeStyle = '#00ff66';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(panelX, panelY, panelW, 30);
+
+        ctx.font = 'bold 12px Consolas, Courier, monospace';
+        ctx.fillStyle = '#00ff66';
+        ctx.fillText('⚡ TATR TERMINAL OPERATING MANUAL & HARVEST PROTOCOLS ⚡', potCenterX, panelY + 20);
+
+        // Protocol Entries
+        const manualRows = [
+          { key: '[ Y ] APPROVE', color: '#00ff66', desc: 'Approve safe code tasks. Mash during the same second to forge HUID COLLISION JACKPOTS!' },
+          { key: '[ N ] REJECT ', color: '#ff4455', desc: 'Defuse dangerous [TRAP] lines. Approving a trap causes CATASTROPHIC wipe of your score!' },
+          { key: '[ P ] PAUSE  ', color: '#00e5ff', desc: 'Freeze execution anytime for tea. Any key press or screen click immediately unpauses.' },
+          { key: '[ Q ] TITLE  ', color: '#ffb300', desc: 'End current run, bank score into Top 10 Hall of Fame, and return to this title screen.' },
+          { key: '[ H ] TOP 10 ', color: '#a78bfa', desc: 'Inspect local Hall of Fame records, peak collision rates, and copy bragging snippet.' },
+          { key: '🥔 POTATOES  ', color: '#ffca28', desc: 'Field-worker lemmings excavate golden potatoes, bag them into burlap sacks, and deliver to silos!' }
+        ];
+
+        let rowY = panelY + 54;
+        ctx.textAlign = 'left';
+        for (const row of manualRows) {
+          ctx.font = 'bold 12px Consolas, Courier, monospace';
+          ctx.fillStyle = row.color;
+          ctx.fillText(row.key, panelX + 24, rowY);
+
+          ctx.font = '12px Consolas, Courier, monospace';
+          ctx.fillStyle = '#cccccc';
+          ctx.fillText('—  ' + row.desc, panelX + 138, rowY);
+          rowY += 26;
+        }
+
+        // Pro Tip Footer
+        ctx.font = 'italic 11px Consolas, Courier, monospace';
+        ctx.fillStyle = '#88bb88';
+        ctx.textAlign = 'center';
+        ctx.fillText('PRO TIP: Consecutive second collisions rapidly compound multiplier up to 10.0x! Zero out bloat!', potCenterX, panelY + panelH - 14);
+
+        // --- BLINKING START GAME ACTION PROMPT ---
+        const startGlow = 0.5 + 0.5 * Math.sin(this.titleAnim * 0.1);
+        const btnBoxX = 220;
+        const btnBoxY = 544;
+        const btnBoxW = 560;
+        const btnBoxH = 46;
+
+        ctx.fillStyle = `rgba(0, 255, 102, ${0.12 + 0.08 * startGlow})`;
+        ctx.fillRect(btnBoxX, btnBoxY, btnBoxW, btnBoxH);
+        ctx.strokeStyle = `rgba(0, 255, 102, ${0.45 + 0.55 * startGlow})`;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(btnBoxX, btnBoxY, btnBoxW, btnBoxH);
+
+        ctx.font = 'bold 17px Consolas, Courier, monospace';
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#00ff66';
+        ctx.shadowBlur = 12 * startGlow;
+        ctx.fillText('▶  PRESS SPACE / ENTER / [ Y ] OR CLICK TO START  ◀', potCenterX, btnBoxY + 28);
+        ctx.shadowBlur = 0;
+
+        ctx.restore();
+      }
+
       drawButtons(ctx) {
         ctx.save();
         for (const btn of this.buttons) {
@@ -1280,9 +1785,9 @@
           ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
 
           // Keycap badge box on the left
-          const badgeX = btn.x + 4;
+          const badgeX = btn.x + 3;
           const badgeY = btn.y + 3;
-          const badgeW = 42;
+          const badgeW = 38;
           const badgeH = 20;
 
           ctx.fillStyle = btn.badgeBg;
@@ -1292,19 +1797,22 @@
           ctx.strokeRect(badgeX, badgeY, badgeW, badgeH);
 
           // Key binding text inside badge, e.g. [ Y ], [ P ]
-          ctx.font = 'bold 11px Consolas, Courier, monospace';
+          ctx.font = 'bold 10px Consolas, Courier, monospace';
           ctx.fillStyle = btn.keyColor;
-          ctx.fillText(btn.key, badgeX + 4, badgeY + 14);
+          ctx.fillText(btn.key, badgeX + 3, badgeY + 14);
 
           // Action label text
           let actionText = btn.label;
-          if (btn.id === 'btn_pause') {
+          if (btn.id === 'btn_yes' && this.viewMode === 'title') {
+            actionText = 'START';
+          } else if (btn.id === 'btn_pause') {
             actionText = this.isPaused ? 'RESUME' : 'PAUSE';
           } else if (btn.id === 'btn_mute') {
             actionText = this.sound.muted ? 'AUDIO: OFF' : 'AUDIO: ON';
           }
+          ctx.font = 'bold 11px Consolas, Courier, monospace';
           ctx.fillStyle = btn.actColor;
-          ctx.fillText(actionText, btn.x + 52, btn.y + 17);
+          ctx.fillText(actionText, btn.x + 46, btn.y + 17);
         }
         ctx.restore();
       }
