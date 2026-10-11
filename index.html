@@ -354,58 +354,124 @@
       }
     }
 
-    // --- Lemmings Walking on Terminal Text Lines ---
+    // --- Lemmings Walking & Cascading Down Terminal Lines ---
     class Lemming {
-      constructor(canvasWidth, lineYs) {
-        this.lineYs = lineYs;
+      constructor(canvasWidth) {
         this.reset(canvasWidth);
       }
       reset(canvasWidth) {
-        this.x = Math.random() * (canvasWidth - 140) + 30;
-        this.y = 80;
-        this.vx = (Math.random() > 0.5 ? 1 : -1) * (0.8 + Math.random() * 0.7);
+        this.x = Math.random() * (canvasWidth - 300) + 40;
+        this.y = 55 + Math.random() * 20;
+        this.vx = (Math.random() > 0.5 ? 1 : -1) * (0.7 + Math.random() * 0.6);
         this.vy = 0;
         this.onGround = false;
-        this.anim = 0;
-        this.color = ['#00ff66', '#00e5ff', '#ffea00', '#ff007f'][Math.floor(Math.random() * 4)];
+        this.currentLineIndex = -1;
+        this.onPrompt = false;
+        this.anim = Math.floor(Math.random() * 100);
+        this.color = ['#00ff66', '#00e5ff', '#ffea00', '#ff007f', '#b388ff'][Math.floor(Math.random() * 5)];
       }
-      update(canvasWidth, canvasHeight, lineYs, screenShake) {
+      kick() {
+        if (this.onPrompt || this.y > 450) {
+          this.onGround = false;
+          this.onPrompt = false;
+          this.currentLineIndex = -1;
+          this.vy = -7.5 - Math.random() * 4.5;
+          this.vx = (Math.random() - 0.5) * 6;
+        }
+      }
+      update(canvasWidth, canvasHeight, terminalLines, promptY, screenShake) {
         this.anim++;
-        this.lineYs = lineYs;
 
         // Screen shake knocks them off!
-        if (screenShake > 4 && this.onGround && Math.random() < 0.25) {
+        if (screenShake > 4 && this.onGround && Math.random() < 0.2) {
           this.onGround = false;
-          this.vy = -2 - Math.random() * 3;
+          this.onPrompt = false;
+          this.currentLineIndex = -1;
+          this.vy = -2.5 - Math.random() * 3;
           this.vx = (Math.random() - 0.5) * 4;
         }
 
-        if (!this.onGround) {
-          this.vy += 0.25;
-          this.x += this.vx;
-          this.y += this.vy;
+        const charW = 8.4;
+        const lineBaseY = 75;
+        const lineH = 22;
 
-          // Check landing on any terminal line
-          for (const lineY of this.lineYs) {
-            if (this.vy > 0 && this.y >= lineY - 12 && this.y <= lineY + 6) {
-              this.y = lineY - 10;
-              this.vy = 0;
-              this.onGround = true;
-              break;
+        if (this.onGround) {
+          if (this.onPrompt) {
+            this.y = promptY - 34; // walk along the active prompt top edge
+            this.x += this.vx;
+            if (this.x < 30) { this.x = 30; this.vx = Math.abs(this.vx); }
+            if (this.x > canvasWidth - 40) { this.x = canvasWidth - 40; this.vx = -Math.abs(this.vx); }
+          } else if (this.currentLineIndex >= 0 && this.currentLineIndex < terminalLines.length) {
+            const line = terminalLines[this.currentLineIndex];
+            const endX = 30 + Math.min(780, (line ? line.text.length : 20) * charW);
+            this.y = lineBaseY + (this.currentLineIndex * lineH) - 10;
+            this.x += this.vx;
+
+            // Walked off the end of the text line -> FALL down to line below!
+            if (this.x > endX) {
+              this.onGround = false;
+              this.vy = 0.5;
+              this.vx = Math.abs(this.vx) * 0.8;
+            } else if (this.x < 28) {
+              this.x = 28;
+              this.vx = Math.abs(this.vx);
+            } else if (Math.random() < 0.003) {
+              // Occasional drop through code spaces/trapdoors
+              this.onGround = false;
+              this.vy = 0.8;
             }
+          } else {
+            this.onGround = false;
           }
-        } else {
-          this.x += this.vx;
-          if (this.x < 30) { this.x = 30; this.vx = Math.abs(this.vx); }
-          if (this.x > canvasWidth - 160) { this.x = canvasWidth - 160; this.vx = -Math.abs(this.vx); }
         }
 
-        return this.y < canvasHeight - 70;
+        if (!this.onGround) {
+          this.vy += 0.28; // gravity
+          this.x += this.vx * 0.85;
+          this.y += this.vy;
+
+          // Check landing on lines below
+          if (this.vy > 0) {
+            for (let i = 0; i < terminalLines.length; i++) {
+              const targetY = lineBaseY + (i * lineH) - 10;
+              if (this.y >= targetY - 6 && this.y <= targetY + 6) {
+                const line = terminalLines[i];
+                const endX = 30 + Math.min(780, (line ? line.text.length : 20) * charW);
+                if (this.x >= 26 && this.x <= endX) {
+                  this.onGround = true;
+                  this.currentLineIndex = i;
+                  this.onPrompt = false;
+                  this.y = targetY;
+                  this.vy = 0;
+                  break;
+                }
+              }
+            }
+
+            // Check landing on active prompt
+            const promptTop = promptY - 34;
+            if (!this.onGround && this.y >= promptTop - 6 && this.y <= promptTop + 8) {
+              if (this.x >= 20 && this.x <= canvasWidth - 30) {
+                this.onGround = true;
+                this.onPrompt = true;
+                this.currentLineIndex = -1;
+                this.y = promptTop;
+                this.vy = 0;
+              }
+            }
+          }
+        }
+
+        // Keep inside horizontal bounds
+        if (this.x < 20) { this.x = 20; this.vx = Math.abs(this.vx); }
+        if (this.x > canvasWidth - 30) { this.x = canvasWidth - 30; this.vx = -Math.abs(this.vx); }
+
+        return this.y < canvasHeight - 20;
       }
       draw(ctx) {
         ctx.save();
-        ctx.translate(this.x, this.y);
-        // Green hair
+        ctx.translate(Math.round(this.x), Math.round(this.y));
+        // Green hair (classic Lemming)
         ctx.fillStyle = '#00ff66';
         ctx.fillRect(2, 0, 6, 3);
         // Face
@@ -424,8 +490,8 @@
           ctx.fillRect(2, 10, 2, 3 + leg);
           ctx.fillRect(6, 10, 2, 3 - leg);
         } else {
-          ctx.fillRect(1, 10, 3, 3);
-          ctx.fillRect(6, 10, 3, 3);
+          ctx.fillRect(1, 10, 3, 4);
+          ctx.fillRect(6, 10, 3, 4);
         }
         ctx.restore();
       }
@@ -469,7 +535,7 @@
           { text: "WARNING: Watch out for [TRAP] lines. Reject them with [N]!", color: "#ffea00" },
           { text: "----------------------------------------------------------------------", color: "#336633" }
         ];
-        this.maxTerminalLines = 22;
+        this.maxTerminalLines = 17;
 
         // Current Active Prompt
         this.currentPrompt = null;
@@ -480,7 +546,7 @@
         this.screenShake = 0;
         this.flashRed = 0;
         this.particles = [];
-        this.avatarMode = 'normal'; // 'normal', 'clown', 'combo'
+        this.avatarMode = 'normal'; // 'normal', 'smug', 'shades', 'laser', 'crown', 'clown'
         this.avatarQuote = 'da_append(&da, item);';
         this.quoteTimer = 120;
 
@@ -489,7 +555,6 @@
         this.scoresList = JSON.parse(localStorage.getItem('huid_leaderboard') || '[]');
 
         // Lemmings
-        this.lineYs = [];
         this.lemmings = [];
 
         // Interactive Buttons
@@ -498,7 +563,7 @@
         this.initCanvasSize();
         this.setupButtons();
         this.nextPrompt();
-        this.setupLemmings(5);
+        this.setupLemmings(6);
         this.setupEventListeners();
 
         this.lastFrameTime = performance.now();
@@ -535,18 +600,17 @@
 
       setupButtons() {
         this.buttons = [
-          { id: 'btn_yes', text: '[ Y: APPROVE & COLLIDE ]', x: 30, y: 625, w: 260, h: 42, color: '#00ff66', bg: '#082508' },
-          { id: 'btn_no',  text: '[ N: REJECT TRAP ]',      x: 310, y: 625, w: 230, h: 42, color: '#ff3344', bg: '#290808' },
-          { id: 'btn_hof', text: '[ H: TOP 10 ]',           x: 560, y: 625, w: 180, h: 42, color: '#00e5ff', bg: '#081d26' },
-          { id: 'btn_mute',text: '[ M: AUDIO ]',            x: 760, y: 625, w: 200, h: 42, color: '#ffea00', bg: '#252008' }
+          { id: 'btn_yes',  key: '[ Y ]', label: 'APPROVE', x: 30,  y: 638, w: 165, h: 26, keyColor: '#ffffff', actColor: '#00ff66', border: '#183822', badgeBg: '#0a1d12', bg: '#06120a' },
+          { id: 'btn_no',   key: '[ N ]', label: 'REJECT',  x: 210, y: 638, w: 160, h: 26, keyColor: '#ffffff', actColor: '#ff4455', border: '#3d1c22', badgeBg: '#220c10', bg: '#120508' },
+          { id: 'btn_hof',  key: '[ H ]', label: 'TOP 10',  x: 385, y: 638, w: 160, h: 26, keyColor: '#ffffff', actColor: '#00e5ff', border: '#163640', badgeBg: '#0d222a', bg: '#061217' },
+          { id: 'btn_mute', key: '[ M ]', label: 'AUDIO',   x: 560, y: 638, w: 165, h: 26, keyColor: '#ffffff', actColor: '#ffea00', border: '#3b3414', badgeBg: '#231e0a', bg: '#131106' }
         ];
       }
 
-      setupLemmings(count = 5) {
+      setupLemmings(count = 6) {
         this.lemmings = [];
-        this.updateLineYs();
         for (let i = 0; i < count; i++) {
-          this.lemmings.push(new Lemming(1000, this.lineYs));
+          this.lemmings.push(new Lemming(1000));
         }
       }
 
@@ -594,7 +658,6 @@
         if (this.terminalLines.length > this.maxTerminalLines) {
           this.terminalLines.shift();
         }
-        this.updateLineYs();
       }
 
       spawnCoins(count = 3, originX = 400, originY = 560) {
@@ -619,6 +682,11 @@
         this.screenShake = 22;
 
         const lostScore = this.score;
+        // Auto-preserve high-scoring runs into the Hall of Fame before zeroing out!
+        if (this.score > 0) {
+          this.saveScoreToLeaderboard(true);
+        }
+
         this.score = 0;
         this.multiplier = 1.0;
         this.pointVelocity = 1.0;
@@ -628,7 +696,7 @@
 
         this.appendTerminalLine('tsoding@collider:~$ ' + this.currentPrompt.text + ' [y/N]? y', '#ff3344');
         this.appendTerminalLine('[CATASTROPHE] You accepted forbidden trap! Score reset to 0! (-' + lostScore + ')', '#ff2244');
-        this.appendTerminalLine('[FATAL] BLYAT! Core dumped. Back to square one.', '#ff6666');
+        this.appendTerminalLine('[FATAL] BLYAT! Core dumped. Run saved to Top 10.', '#ff6666');
 
         this.spawnText('SCORE WIPED! 0', 350, 520, '#ff1111');
         this.nextPrompt();
@@ -642,6 +710,11 @@
 
         const now = new Date();
         const curSec = now.getSeconds();
+
+        // Trampoline kick lemmings walking near prompt!
+        for (const lem of this.lemmings) {
+          lem.kick();
+        }
 
         // TRAP CHECK
         if (this.currentPrompt && this.currentPrompt.trap) {
@@ -676,11 +749,11 @@
           this.spawnText('💥 COLLISION #' + this.collisionsThisSec + '! +' + earned, 350, 530, '#ffea00');
 
           if (this.collisionsThisSec === 2) {
-            this.setAvatarQuote("Collision detected!", "normal", 60);
+            this.setAvatarQuote("Collision detected!", "smile", 60);
           } else if (this.collisionsThisSec === 4) {
-            this.setAvatarQuote("KEEP MASHING BLYAT!", "combo", 90);
+            this.setAvatarQuote("KEEP MASHING BLYAT!", "shades", 90);
           } else if (this.collisionsThisSec >= 7) {
-            this.setAvatarQuote("SPEED OF LIGHT!", "combo", 120);
+            this.setAvatarQuote("SPEED OF LIGHT!", "laser", 120);
           }
 
           this.appendTerminalLine('tsoding@collider:~$ ' + promptText + ' [y/N]? y', '#00ff66');
@@ -696,6 +769,10 @@
           this.spawnSparks(5, 420, 560, '#00e5ff');
           this.spawnText('CREATED +' + earned, 380, 540, '#00ff66');
 
+          if (this.consecutiveSecs >= 3 && this.avatarMode === 'normal') {
+            this.setAvatarQuote("NO BLOAT! PURE SPEED!", "smile", 60);
+          }
+
           this.appendTerminalLine('tsoding@collider:~$ ' + promptText + ' [y/N]? y', '#00ff66');
           this.appendTerminalLine('--> [CREATED] ' + this.currentHuidStr + ' (+' + earned + ' pts)', '#33ff55');
         }
@@ -703,6 +780,9 @@
         if (this.score > this.highScore) {
           this.highScore = this.score;
           localStorage.setItem('huid_high_score', String(this.highScore));
+          if (this.avatarMode !== 'laser' && this.avatarMode !== 'shades') {
+            this.setAvatarQuote("NEW HIGH SCORE!", "crown", 80);
+          }
         }
 
         this.nextPrompt();
@@ -724,7 +804,7 @@
           this.sound.playJackpot(2);
           this.spawnSparks(16, 420, 560, '#00e5ff');
           this.spawnText('🛡️ TRAP DEFUSED! +' + bonus, 340, 530, '#00e5ff');
-          this.setAvatarQuote("Good reject! No bloat here.", "normal", 80);
+          this.setAvatarQuote("Good reject! No bloat here.", "smug", 80);
 
           this.appendTerminalLine('tsoding@collider:~$ ' + promptText + ' [y/N]? n', '#ff3344');
           this.appendTerminalLine('--> [🛡️ DEFUSED] Rejected trap! (+' + bonus + ' pts)', '#00e5ff');
@@ -737,25 +817,30 @@
         this.nextPrompt();
       }
 
-      saveScoreToLeaderboard() {
+      saveScoreToLeaderboard(wiped = false) {
         if (this.score <= 0) return;
         const entry = {
           score: this.score,
           collisions: this.totalCollisions,
           peakRate: this.peakCollisions,
           multiplier: this.multiplier.toFixed(1),
-          date: new Date().toISOString().replace('T', ' ').slice(0, 19)
+          date: new Date().toISOString().replace('T', ' ').slice(0, 19),
+          status: wiped ? '☠️ WIPED' : '⚡ RECORD'
         };
-        this.scoresList.push(entry);
-        this.scoresList.sort((a, b) => b.score - a.score);
-        this.scoresList = this.scoresList.slice(0, 10);
-        localStorage.setItem('huid_leaderboard', JSON.stringify(this.scoresList));
+
+        const duplicate = this.scoresList.find(e => e.score === entry.score && Math.abs(new Date(e.date) - new Date(entry.date)) < 4000);
+        if (!duplicate) {
+          this.scoresList.push(entry);
+          this.scoresList.sort((a, b) => b.score - a.score);
+          this.scoresList = this.scoresList.slice(0, 10);
+          localStorage.setItem('huid_leaderboard', JSON.stringify(this.scoresList));
+        }
       }
 
       toggleHallOfFame() {
         this.viewMode = (this.viewMode === 'terminal') ? 'hall_of_fame' : 'terminal';
         if (this.viewMode === 'hall_of_fame') {
-          this.saveScoreToLeaderboard();
+          this.saveScoreToLeaderboard(false);
         }
       }
 
@@ -768,6 +853,10 @@
       }
 
       setupEventListeners() {
+        window.addEventListener('beforeunload', () => {
+          if (this.score > 0) this.saveScoreToLeaderboard(false);
+        });
+
         window.addEventListener('keydown', (e) => {
           this.sound.init();
           if (e.key === 'y' || e.key === 'Y' || e.key === ' ' || e.key === 'Enter') {
@@ -858,7 +947,7 @@
         }
 
         for (const lem of this.lemmings) {
-          const alive = lem.update(1000, 680, this.lineYs, this.screenShake);
+          const alive = lem.update(1000, 680, this.terminalLines, 575, this.screenShake);
           if (!alive) {
             this.spawnSparks(8, lem.x, 600, '#00ff66');
             lem.reset(1000);
@@ -949,6 +1038,12 @@
       }
 
       drawTerminalBuffer(ctx) {
+        ctx.save();
+        // Strict clipping boundary: prevents text from bleeding into status bar, webcam, or active prompt
+        ctx.beginPath();
+        ctx.rect(20, 52, 820, 473);
+        ctx.clip();
+
         ctx.font = '14px Consolas, Courier, monospace';
         let y = 75;
         const lineH = 22;
@@ -958,6 +1053,7 @@
           ctx.fillText(item.text, 30, y);
           y += lineH;
         }
+        ctx.restore();
       }
 
       drawActivePrompt(ctx) {
@@ -1016,56 +1112,216 @@
         const camY = 60;
         const camSize = 90;
 
+        ctx.save();
         ctx.fillStyle = '#051105';
         ctx.fillRect(camX, camY, camSize, camSize);
-        ctx.strokeStyle = (this.avatarMode === 'clown') ? '#ff2244' : '#00ff66';
+
+        let borderCol = '#00ff66';
+        let badgeTxt = '● REC';
+        let badgeCol = '#00ff66';
+
+        if (this.avatarMode === 'clown') {
+          borderCol = '#ff2244';
+          badgeTxt = '● BLYAT';
+          badgeCol = '#ff2244';
+        } else if (this.avatarMode === 'laser') {
+          borderCol = '#ff0055';
+          badgeTxt = '● OVERCLOCK';
+          badgeCol = '#ff0055';
+          ctx.shadowColor = '#ff0055';
+          ctx.shadowBlur = 10;
+        } else if (this.avatarMode === 'shades') {
+          borderCol = '#ffea00';
+          badgeTxt = '● DEAL W/ IT';
+          badgeCol = '#ffea00';
+        } else if (this.avatarMode === 'crown') {
+          borderCol = '#ffea00';
+          badgeTxt = '● KING';
+          badgeCol = '#ffea00';
+        } else if (this.avatarMode === 'smug') {
+          borderCol = '#00e5ff';
+          badgeTxt = '● SMUG';
+          badgeCol = '#00e5ff';
+        } else if (this.avatarMode === 'smile') {
+          borderCol = '#00ff66';
+          badgeTxt = '● HAPPY';
+          badgeCol = '#33ff77';
+        }
+
+        ctx.strokeStyle = borderCol;
         ctx.lineWidth = 2;
         ctx.strokeRect(camX, camY, camSize, camSize);
+        ctx.shadowBlur = 0;
 
         const img = (this.avatarMode === 'clown') ? this.clownImg : this.avatarImg;
         if (img.complete && img.naturalWidth > 0) {
           ctx.drawImage(img, camX + 2, camY + 2, camSize - 4, camSize - 4);
         }
 
-        ctx.fillStyle = (this.avatarMode === 'clown') ? '#ff2244' : '#00ff66';
-        ctx.font = 'bold 10px Consolas, Courier, monospace';
-        ctx.fillText(this.avatarMode === 'clown' ? '● BLYAT' : '● REC', camX + 8, camY + 14);
+        // --- Reactive Procedural Overlays ---
+        if (this.avatarMode === 'clown') {
+          // Streaming animated pixel teardrops
+          const dropY1 = ((Date.now() / 30) % 35);
+          const dropY2 = (((Date.now() / 30) + 18) % 35);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(camX + 34, camY + 45 + dropY1, 3, 5);
+          ctx.fillRect(camX + 57, camY + 45 + dropY2, 3, 5);
+        } else if (this.avatarMode === 'smug') {
+          // Cheerful pink cheek blushes
+          ctx.fillStyle = 'rgba(255, 120, 150, 0.45)';
+          ctx.fillRect(camX + 26, camY + 52, 9, 4);
+          ctx.fillRect(camX + 58, camY + 52, 9, 4);
+          // Smug smirk on right side of mouth
+          ctx.fillStyle = '#3a2010';
+          ctx.fillRect(camX + 42, camY + 63, 8, 2);
+          ctx.fillRect(camX + 48, camY + 61, 4, 3);
+          // Twinkling glint sparkle on glasses
+          const pulse = Math.abs(Math.sin(Date.now() / 120));
+          const glintX = camX + 56;
+          const glintY = camY + 42;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(glintX, glintY, 3, 3);
+          ctx.fillStyle = '#00e5ff';
+          const r = Math.floor(pulse * 3) + 2;
+          ctx.fillRect(glintX - r, glintY + 1, r, 1);
+          ctx.fillRect(glintX + 3, glintY + 1, r, 1);
+          ctx.fillRect(glintX + 1, glintY - r, 1, r);
+          ctx.fillRect(glintX + 1, glintY + 3, 1, r);
+        } else if (this.avatarMode === 'shades') {
+          // 8-bit "Deal With It" pixel sunglasses
+          ctx.fillStyle = '#050505';
+          ctx.fillRect(camX + 27, camY + 37, 16, 9);
+          ctx.fillRect(camX + 47, camY + 37, 16, 9);
+          ctx.fillRect(camX + 43, camY + 38, 4, 3);
+          // White reflection pixels on top-left of each lens
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(camX + 29, camY + 38, 3, 2);
+          ctx.fillRect(camX + 32, camY + 40, 2, 2);
+          ctx.fillRect(camX + 49, camY + 38, 3, 2);
+          ctx.fillRect(camX + 52, camY + 40, 2, 2);
+          // Confident white teeth smile
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(camX + 39, camY + 62, 12, 3);
+        } else if (this.avatarMode === 'laser') {
+          // Laser eye beams shooting across screen!
+          const lX1 = camX + 35, lY1 = camY + 41;
+          const lX2 = camX + 56, lY2 = camY + 41;
+          ctx.strokeStyle = '#ff0055';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(lX1, lY1);
+          ctx.lineTo(camX - 80, camY + 75);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(lX2, lY2);
+          ctx.lineTo(camX - 55, camY + 75);
+          ctx.stroke();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(lX1, lY1);
+          ctx.lineTo(camX - 80, camY + 75);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(lX2, lY2);
+          ctx.lineTo(camX - 55, camY + 75);
+          ctx.stroke();
+          ctx.fillStyle = '#ff0055';
+          ctx.beginPath(); ctx.arc(lX1, lY1, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(lX2, lY2, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath(); ctx.arc(lX1, lY1, 2, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(lX2, lY2, 2, 0, Math.PI * 2); ctx.fill();
+        } else if (this.avatarMode === 'crown') {
+          // 8-bit golden pixel crown
+          const cX = camX + 27;
+          const cY = camY + 9;
+          ctx.fillStyle = '#ffea00';
+          ctx.fillRect(cX, cY + 10, 36, 4);
+          ctx.fillRect(cX, cY + 2, 8, 8);
+          ctx.fillRect(cX + 14, cY - 1, 8, 11);
+          ctx.fillRect(cX + 28, cY + 2, 8, 8);
+          ctx.fillStyle = '#00ff66';
+          ctx.fillRect(cX + 2, cY + 5, 4, 3);
+          ctx.fillStyle = '#ff2244';
+          ctx.fillRect(cX + 16, cY + 2, 4, 4);
+          ctx.fillStyle = '#00e5ff';
+          ctx.fillRect(cX + 30, cY + 5, 4, 3);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(camX + 38, camY + 62, 14, 3);
+        } else if (this.avatarMode === 'smile') {
+          // Beaming happy smile
+          ctx.fillStyle = 'rgba(255, 120, 150, 0.45)';
+          ctx.fillRect(camX + 26, camY + 52, 9, 4);
+          ctx.fillRect(camX + 58, camY + 52, 9, 4);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(camX + 37, camY + 61, 16, 4);
+          ctx.fillStyle = '#221105';
+          ctx.fillRect(camX + 39, camY + 63, 12, 1);
+        }
 
+        // Camera mode status text badge
+        ctx.fillStyle = badgeCol;
+        ctx.font = 'bold 10px Consolas, Courier, monospace';
+        ctx.fillText(badgeTxt, camX + 8, camY + 14);
+
+        // Speech bubble
         if (this.avatarQuote) {
-          ctx.save();
           ctx.font = 'bold 12px Consolas, Courier, monospace';
           const tw = ctx.measureText(this.avatarQuote).width;
           const bubbleX = camX - tw - 24;
           const bubbleY = camY + 25;
 
           ctx.fillStyle = '#061606';
-          ctx.strokeStyle = (this.avatarMode === 'clown') ? '#ff2244' : '#00ff66';
+          ctx.strokeStyle = borderCol;
           ctx.lineWidth = 1.5;
           ctx.fillRect(bubbleX, bubbleY - 16, tw + 16, 26);
           ctx.strokeRect(bubbleX, bubbleY - 16, tw + 16, 26);
 
           ctx.fillStyle = (this.avatarMode === 'clown') ? '#ff4444' : '#33ff77';
           ctx.fillText(this.avatarQuote, bubbleX + 8, bubbleY + 2);
-          ctx.restore();
         }
+        ctx.restore();
       }
 
       drawButtons(ctx) {
+        ctx.save();
         for (const btn of this.buttons) {
+          // Chassis background
           ctx.fillStyle = btn.bg;
           ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
-          ctx.strokeStyle = btn.color;
-          ctx.lineWidth = 2;
+
+          // Subtle cyber border
+          ctx.strokeStyle = btn.border;
+          ctx.lineWidth = 1.5;
           ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
 
-          ctx.font = 'bold 13px Consolas, Courier, monospace';
-          ctx.fillStyle = btn.color;
-          ctx.shadowColor = btn.color;
-          ctx.shadowBlur = 4;
-          const tw = ctx.measureText(btn.text).width;
-          ctx.fillText(btn.text, btn.x + (btn.w - tw) / 2, btn.y + 26);
-          ctx.shadowBlur = 0;
+          // Keycap badge box on the left
+          const badgeX = btn.x + 4;
+          const badgeY = btn.y + 3;
+          const badgeW = 42;
+          const badgeH = 20;
+
+          ctx.fillStyle = btn.badgeBg;
+          ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+          ctx.strokeStyle = btn.actColor;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(badgeX, badgeY, badgeW, badgeH);
+
+          // Key binding text inside badge, e.g. [ Y ]
+          ctx.font = 'bold 11px Consolas, Courier, monospace';
+          ctx.fillStyle = btn.keyColor;
+          ctx.fillText(btn.key, badgeX + 4, badgeY + 14);
+
+          // Action label text
+          let actionText = btn.label;
+          if (btn.id === 'btn_mute') {
+            actionText = this.sound.muted ? 'AUDIO: OFF' : 'AUDIO: ON';
+          }
+          ctx.fillStyle = btn.actColor;
+          ctx.fillText(actionText, btn.x + 52, btn.y + 17);
         }
+        ctx.restore();
       }
 
       drawHallOfFame(ctx) {
