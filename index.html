@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>HUID BLYAT! - The Tsoding Collision Collider</title>
-  <meta name="description" content="A retro 80s canvas terminal game about generating HUID collisions and avoiding catastrophic traps. Inspired by Tsoding.">
+  <title>HUID BLYAT! - Tsoding Collision Collider</title>
+  <meta name="description" content="Retro 80s terminal game: generate HUID collisions and avoid catastrophic traps.">
   <style>
     * {
       box-sizing: border-box;
@@ -16,10 +16,10 @@
     html, body {
       width: 100%;
       height: 100%;
-      background-color: #050805;
+      background-color: #020602;
       color: #33ff33;
       overflow: hidden;
-      font-family: 'Courier New', Courier, monospace;
+      font-family: 'Consolas', 'Courier New', Courier, monospace;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -31,14 +31,14 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background: radial-gradient(circle at center, #0a140a 0%, #030503 100%);
+      background: radial-gradient(circle at center, #061206 0%, #010401 100%);
     }
     canvas {
       display: block;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       cursor: crosshair;
-      box-shadow: 0 0 35px rgba(20, 255, 50, 0.25);
+      box-shadow: 0 0 40px rgba(0, 255, 60, 0.15);
     }
   </style>
 </head>
@@ -49,9 +49,12 @@
 
   <script>
     /* ==========================================================================
-       HUID BLYAT! - THE TSODING COLLISION COLLIDER
-       100% Canvas Game in Pure JavaScript (Zero external assets)
+       HUID BLYAT! - THE AUTHENTIC TSODING SCROLLING TERMINAL
+       100% Canvas, Zero External HTTP Dependencies
        ========================================================================== */
+
+    const TSODING_AVATAR_B64 = "data:image/jpeg;base64,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";
+    const TSODING_CLOWN_B64 = "data:image/png;base64,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";
 
     // --- Audio Synthesizer (Web Audio API) ---
     class SoundEngine {
@@ -62,9 +65,7 @@
       init() {
         if (!this.ctx) {
           const AudioContext = window.AudioContext || window.webkitAudioContext;
-          if (AudioContext) {
-            this.ctx = new AudioContext();
-          }
+          if (AudioContext) this.ctx = new AudioContext();
         }
         if (this.ctx && this.ctx.state === 'suspended') {
           this.ctx.resume();
@@ -82,16 +83,16 @@
         const gain = this.ctx.createGain();
         const now = this.ctx.currentTime;
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(320 + Math.random() * 80, now);
-        osc.frequency.exponentialRampToValueAtTime(110, now + 0.04);
+        osc.frequency.setValueAtTime(340 + Math.random() * 80, now);
+        osc.frequency.exponentialRampToValueAtTime(110, now + 0.035);
         gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
         osc.connect(gain);
         gain.connect(this.ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.045);
+        osc.stop(now + 0.04);
       }
-      playCoin(pitchMultiplier = 1) {
+      playCoin(pitchMult = 1) {
         if (this.muted) return;
         this.init();
         if (!this.ctx) return;
@@ -99,35 +100,35 @@
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'square';
-        const baseFreq = 987.77 * Math.min(2.5, pitchMultiplier);
-        osc.frequency.setValueAtTime(baseFreq, now);
-        osc.frequency.setValueAtTime(baseFreq * 1.334, now + 0.08); // B5 to E6 jump
+        const base = 987.77 * Math.min(2.2, pitchMult);
+        osc.frequency.setValueAtTime(base, now);
+        osc.frequency.setValueAtTime(base * 1.334, now + 0.07);
         gain.gain.setValueAtTime(0.18, now);
-        gain.gain.setValueAtTime(0.18, now + 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+        gain.gain.setValueAtTime(0.18, now + 0.07);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
         osc.connect(gain);
         gain.connect(this.ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.33);
+        osc.stop(now + 0.29);
       }
       playJackpot(level = 1) {
         if (this.muted) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
-        const chord = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C Major
+        const chord = [523.25, 659.25, 783.99, 1046.50, 1318.51];
         chord.forEach((freq, idx) => {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          const startTime = now + (idx * 0.04);
+          const st = now + (idx * 0.035);
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq * (1 + (level * 0.08)), startTime);
-          gain.gain.setValueAtTime(0.12, startTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.22);
+          osc.frequency.setValueAtTime(freq * (1 + (level * 0.08)), st);
+          gain.gain.setValueAtTime(0.12, st);
+          gain.gain.exponentialRampToValueAtTime(0.001, st + 0.2);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
-          osc.start(startTime);
-          osc.stop(startTime + 0.23);
+          osc.start(st);
+          osc.stop(st + 0.21);
         });
       }
       playDefuse() {
@@ -141,53 +142,50 @@
         osc.frequency.setValueAtTime(440, now);
         osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
         gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
         osc.connect(gain);
         gain.connect(this.ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.16);
+        osc.stop(now + 0.15);
       }
       playCatastrophe() {
         if (this.muted) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
-        // Low distorted buzzer
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(140, now);
-        osc.frequency.linearRampToValueAtTime(45, now + 0.65);
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.linearRampToValueAtTime(40, now + 0.6);
         gain.gain.setValueAtTime(0.4, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
         osc.connect(gain);
         gain.connect(this.ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.75);
+        osc.stop(now + 0.7);
 
         // Noise blast
-        const bufferSize = this.ctx.sampleRate * 0.4;
-        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          data[i] = Math.random() * 2 - 1;
-        }
+        const bSize = this.ctx.sampleRate * 0.4;
+        const buf = this.ctx.createBuffer(1, bSize, this.ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bSize; i++) data[i] = Math.random() * 2 - 1;
         const noise = this.ctx.createBufferSource();
-        noise.buffer = buffer;
-        const noiseGain = this.ctx.createGain();
-        noiseGain.gain.setValueAtTime(0.3, now);
-        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-        noise.connect(noiseGain);
-        noiseGain.connect(this.ctx.destination);
+        noise.buffer = buf;
+        const nGain = this.ctx.createGain();
+        nGain.gain.setValueAtTime(0.3, now);
+        nGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        noise.connect(nGain);
+        nGain.connect(this.ctx.destination);
         noise.start(now);
         noise.stop(now + 0.42);
       }
     }
 
-    // --- Massively Expanded Tsoding Tasks Database ---
+    // --- Curated Tasks Database ---
     const SAFE_TASKS = [
-      // Dynamic Arrays (The Legendary Macro)
-      "da_append(&da, item); // dynamic array macro recreation #42",
+      // Dynamic Arrays
+      "da_append(&da, item); // dynamic array macro #412",
       "da.items[da.count++] = item; if (da.count >= da.capacity) da_reserve(&da);",
       "#define DA_INIT_CAPACITY 256 // std::vector is bloat",
       "Re-implement da_append() macro from memory in 12 lines of C",
@@ -195,15 +193,17 @@
       "da_reserve(&da, new_capacity * 2); // manual memory growth",
       "Write type-safe dynamic array macro using typeof() GCC extension",
       "Refactor dynamic array into single header nob_da.h",
+      "da_append_many(&da, items, count); // bulk allocation",
 
       // Semicolon Sagas
-      "Debug missing semicolon in GCC template vomit for 3 hours",
+      "Debug missing semicolon in GCC compiler vomit for 3 hours",
       "Stare at line 142 wondering where the semicolon went",
       "Add semicolon after struct declaration: struct Tsoding { int hair; };",
       "Compiler error: expected ';' before '}' token in main.c",
       "Accidentally put semicolon after #define and broke entire AST",
       "Search entire codebase for misplaced semicolon inside macro",
       "Spend 45 minutes debugging why 'if (condition); { do_thing(); }' ran anyway",
+      "Syntax error: ';' missing at end of statement in recursive descent parser",
 
       // nob.h & Build Systems
       "nob_cmd_run_sync(&cmd); // Build everything with pure C",
@@ -213,7 +213,7 @@
       "Compile nob.c with gcc -o nob nob.c (No make, no ninja, just C)",
       "Header-only library madness: #define NOB_IMPLEMENTATION",
       "nob_mkdir_if_not_exists(\"build/\");",
-      "Write custom build system for building the build system",
+      "Write custom build system for building the build system in C",
 
       // Memory & Allocators
       "Arena alloc 128MB (we let OS exit() free everything)",
@@ -223,6 +223,7 @@
       "Implement ring buffer with zero external dependencies",
       "Pointer arithmetic: *(char**)((char*)ptr + offset) = payload;",
       "Memory leak? The process terminates anyway, who cares!",
+      "Zero-out allocated arena with memset(arena.buff, 0, arena.capacity);",
 
       // Low-Level Wizardry & Compilers
       "Write custom Forth interpreter from scratch in C99",
@@ -247,18 +248,15 @@
       "Write a quick Haskell one-liner that solves the entire problem",
       "foldr (.) id [pure_c, no_dependencies, raw_performance]",
       "Pattern match on Maybe (Just (HUID_Collision))",
-      "Curry functions until readability drops to zero",
 
-      // Editor, Terminal & Emacs
+      // Editor & Tooling
       "Configure Emacs evil-mode keybindings for the 900th time",
       "Escape from Vim with :wq! and wipe forehead",
       "Write custom Emacs Lisp mode for real-time HUID validation",
-      "GDB attach to PID and print stack trace while sweating",
-      "Watch GCC output with -O3 flag and marvel at SIMD vectorization"
+      "GDB attach to PID and print stack trace while sweating"
     ];
 
     const TRAP_TASKS = [
-      // Dangerous / Absurd Traps (MUST PRESS NO)
       "Rewrite entire codebase in Java Spring Boot? [y/N]",
       "rm -rf / --no-preserve-root [y/N]",
       "Switch build system to CMake 3.28 with 45 external dependencies? [y/N]",
@@ -283,47 +281,38 @@
       "Rewrite custom Forth VM into SOAP XML Enterprise Service Bus? [y/N]",
       "Replace terminal with 120 FPS Three.js metaverse portal? [y/N]",
       "Accept 500-comment GitHub PR renaming 'i' to 'temporaryLoopCounter'? [y/N]",
-      "Replace Linux kernel syscalls with Node.js child_process.exec()? [y/N]",
-      "Install Docker Desktop with 8GB RAM footprint for a hello world? [y/N]",
-      "Rewrite dynamic array using Java ArrayList<Object> factory pattern? [y/N]"
+      "Replace Linux kernel syscalls with Node.js child_process.exec()? [y/N]"
     ];
 
-    // --- Particle System (Mario Coins, Sparks, Text Popups) ---
+    // --- Particles (Mario Coins, Floating Text, Sparks) ---
     class Particle {
       constructor(x, y, type, text = '', color = '#33ff33') {
         this.x = x;
         this.y = y;
-        this.type = type; // 'coin', 'text', 'spark', 'splat'
+        this.type = type;
         this.text = text;
         this.color = color;
         this.alpha = 1.0;
-        this.scale = 1.0;
         this.life = 0;
 
         if (type === 'coin') {
-          this.vx = (Math.random() - 0.5) * 4;
-          this.vy = -7 - Math.random() * 4; // Mario jump arc
+          this.vx = (Math.random() - 0.5) * 5;
+          this.vy = -7 - Math.random() * 4;
           this.gravity = 0.35;
-          this.spinAngle = 0;
-          this.spinSpeed = 0.25;
-          this.maxLife = 55;
+          this.spin = 0;
+          this.maxLife = 50;
         } else if (type === 'text') {
           this.vx = (Math.random() - 0.5) * 1.5;
-          this.vy = -2.2 - Math.random() * 1.5;
+          this.vy = -2.0 - Math.random() * 1.5;
           this.gravity = 0;
           this.maxLife = 60;
         } else if (type === 'spark') {
-          const angle = Math.random() * Math.PI * 2;
-          const speed = 2 + Math.random() * 5;
-          this.vx = Math.cos(angle) * speed;
-          this.vy = Math.sin(angle) * speed;
+          const a = Math.random() * Math.PI * 2;
+          const s = 2 + Math.random() * 5;
+          this.vx = Math.cos(a) * s;
+          this.vy = Math.sin(a) * s;
           this.gravity = 0.15;
-          this.maxLife = 35;
-        } else if (type === 'splat') {
-          this.vx = (Math.random() - 0.5) * 3;
-          this.vy = -1 - Math.random() * 3;
-          this.gravity = 0.2;
-          this.maxLife = 25;
+          this.maxLife = 30;
         }
       }
       update() {
@@ -331,9 +320,7 @@
         this.x += this.vx;
         this.y += this.vy;
         this.vy += this.gravity;
-        if (this.type === 'coin') {
-          this.spinAngle += this.spinSpeed;
-        }
+        if (this.type === 'coin') this.spin += 0.25;
         this.alpha = Math.max(0, 1 - (this.life / this.maxLife));
         return this.life < this.maxLife;
       }
@@ -341,29 +328,25 @@
         ctx.save();
         ctx.globalAlpha = Math.max(0, this.alpha);
         if (this.type === 'coin') {
-          // Mario-style golden coin
-          const width = Math.abs(Math.cos(this.spinAngle)) * 14 + 3;
+          const w = Math.abs(Math.cos(this.spin)) * 14 + 3;
           ctx.translate(this.x, this.y);
-          // Coin outer rim
           ctx.fillStyle = '#ffcc00';
           ctx.beginPath();
-          ctx.ellipse(0, 0, width / 2, 10, 0, 0, Math.PI * 2);
+          ctx.ellipse(0, 0, w / 2, 9, 0, 0, Math.PI * 2);
           ctx.fill();
-          // Coin inner groove
           ctx.fillStyle = '#ffe066';
           ctx.beginPath();
-          ctx.ellipse(0, 0, Math.max(1, width / 2 - 2), 7, 0, 0, Math.PI * 2);
+          ctx.ellipse(0, 0, Math.max(1, w / 2 - 2), 6, 0, 0, Math.PI * 2);
           ctx.fill();
-          // Embossed diamond/line
-          ctx.fillStyle = '#cc9900';
-          ctx.fillRect(-1, -4, 2, 8);
+          ctx.fillStyle = '#b38600';
+          ctx.fillRect(-1, -3, 2, 6);
         } else if (this.type === 'text') {
-          ctx.font = 'bold 15px "Courier New", monospace';
+          ctx.font = 'bold 15px Consolas, Courier, monospace';
           ctx.fillStyle = this.color;
           ctx.shadowColor = this.color;
-          ctx.shadowBlur = 8;
+          ctx.shadowBlur = 6;
           ctx.fillText(this.text, this.x, this.y);
-        } else if (this.type === 'spark' || this.type === 'splat') {
+        } else if (this.type === 'spark') {
           ctx.fillStyle = this.color;
           ctx.fillRect(this.x, this.y, 3, 3);
         }
@@ -371,317 +354,152 @@
       }
     }
 
-    // --- Lemmings Physics System (Pixel Coders Walking on Code Lines) ---
+    // --- Lemmings Walking on Terminal Text Lines ---
     class Lemming {
-      constructor(canvasWidth, platforms) {
-        this.platforms = platforms;
+      constructor(canvasWidth, lineYs) {
+        this.lineYs = lineYs;
         this.reset(canvasWidth);
       }
       reset(canvasWidth) {
-        this.x = Math.random() * (canvasWidth - 100) + 50;
+        this.x = Math.random() * (canvasWidth - 140) + 30;
         this.y = 80;
         this.vx = (Math.random() > 0.5 ? 1 : -1) * (0.8 + Math.random() * 0.7);
         this.vy = 0;
-        this.width = 10;
-        this.height = 14;
         this.onGround = false;
-        this.falling = true;
-        this.state = 'walk'; // 'walk', 'fall', 'splat'
-        this.animFrame = 0;
-        this.shirtColor = ['#33ff33', '#00e5ff', '#ffb300', '#ff0055'][Math.floor(Math.random() * 4)];
+        this.anim = 0;
+        this.color = ['#00ff66', '#00e5ff', '#ffea00', '#ff007f'][Math.floor(Math.random() * 4)];
       }
-      update(canvasWidth, canvasHeight, screenShake) {
-        this.animFrame++;
+      update(canvasWidth, canvasHeight, lineYs, screenShake) {
+        this.anim++;
+        this.lineYs = lineYs;
 
-        // If high screen shake, lemmings stumble and fall off!
+        // Screen shake knocks them off!
         if (screenShake > 4 && this.onGround && Math.random() < 0.25) {
           this.onGround = false;
-          this.falling = true;
           this.vy = -2 - Math.random() * 3;
           this.vx = (Math.random() - 0.5) * 4;
         }
 
         if (!this.onGround) {
-          this.vy += 0.25; // gravity
+          this.vy += 0.25;
           this.x += this.vx;
           this.y += this.vy;
 
-          // Check landing on platforms (horizontal CLI lines & prompt edges)
-          for (const plat of this.platforms) {
-            if (this.vy > 0 &&
-                this.x + this.width > plat.x1 &&
-                this.x < plat.x2 &&
-                this.y + this.height >= plat.y &&
-                this.y + this.height <= plat.y + 12) {
-              this.y = plat.y - this.height;
+          // Check landing on any terminal line
+          for (const lineY of this.lineYs) {
+            if (this.vy > 0 && this.y >= lineY - 12 && this.y <= lineY + 6) {
+              this.y = lineY - 10;
               this.vy = 0;
               this.onGround = true;
-              this.falling = false;
               break;
             }
           }
         } else {
-          // Walking along platform
           this.x += this.vx;
-          // Check if walked off current platform ledge
-          let supported = false;
-          for (const plat of this.platforms) {
-            if (this.x + this.width > plat.x1 &&
-                this.x < plat.x2 &&
-                Math.abs(this.y + this.height - plat.y) <= 4) {
-              supported = true;
-              break;
-            }
-          }
-          if (!supported) {
-            this.onGround = false;
-            this.falling = true;
-          }
-          // Turn around at canvas screen boundaries
-          if (this.x < 15) { this.x = 15; this.vx = Math.abs(this.vx); }
-          if (this.x > canvasWidth - 25) { this.x = canvasWidth - 25; this.vx = -Math.abs(this.vx); }
+          if (this.x < 30) { this.x = 30; this.vx = Math.abs(this.vx); }
+          if (this.x > canvasWidth - 160) { this.x = canvasWidth - 160; this.vx = -Math.abs(this.vx); }
         }
 
-        // Reached bottom floor
-        if (this.y > canvasHeight - 20) {
-          return false; // trigger splat & respawn
-        }
-        return true;
+        return this.y < canvasHeight - 70;
       }
       draw(ctx) {
         ctx.save();
         ctx.translate(this.x, this.y);
-
-        // Little green/cyan pixel coder with blue hair & bag
         // Green hair
         ctx.fillStyle = '#00ff66';
         ctx.fillRect(2, 0, 6, 3);
         // Face
         ctx.fillStyle = '#ffe0b2';
-        ctx.fillRect(3, 3, 5, 4);
-        // Eyes
-        ctx.fillStyle = '#111';
-        const eyeOffset = this.vx > 0 ? 5 : 3;
-        ctx.fillRect(eyeOffset, 4, 2, 2);
+        ctx.fillRect(3, 3, 5, 3);
+        // Eye
+        ctx.fillStyle = '#000';
+        ctx.fillRect(this.vx > 0 ? 6 : 3, 4, 2, 2);
         // Shirt
-        ctx.fillStyle = this.shirtColor;
-        ctx.fillRect(2, 7, 6, 4);
-        // Legs (animated walking or flailing when falling)
+        ctx.fillStyle = this.color;
+        ctx.fillRect(2, 6, 6, 4);
+        // Legs
         ctx.fillStyle = '#3f51b5';
         if (this.onGround) {
-          const legPhase = Math.sin(this.animFrame * 0.4);
-          ctx.fillRect(2, 11, 2, 3 + legPhase);
-          ctx.fillRect(6, 11, 2, 3 - legPhase);
+          const leg = Math.sin(this.anim * 0.45);
+          ctx.fillRect(2, 10, 2, 3 + leg);
+          ctx.fillRect(6, 10, 2, 3 - leg);
         } else {
-          // Flailing legs in air
-          const flail = (this.animFrame % 4 < 2) ? 1 : -1;
-          ctx.fillRect(1, 11 + flail, 3, 3);
-          ctx.fillRect(6, 11 - flail, 3, 3);
+          ctx.fillRect(1, 10, 3, 3);
+          ctx.fillRect(6, 10, 3, 3);
         }
-        ctx.restore();
-      }
-    }
-
-    // --- Procedural Tsoding Avatar Renderer ---
-    class TsodingAvatar {
-      constructor() {
-        this.state = 'idle'; // 'idle', 'smug', 'shout', 'flame', 'crying'
-        this.frame = 0;
-        this.speechBubble = '';
-        this.bubbleTimer = 0;
-      }
-      setState(state, quote = '', duration = 80) {
-        this.state = state;
-        if (quote) {
-          this.speechBubble = quote;
-          this.bubbleTimer = duration;
-        }
-      }
-      update() {
-        this.frame++;
-        if (this.bubbleTimer > 0) {
-          this.bubbleTimer--;
-          if (this.bubbleTimer === 0) {
-            this.speechBubble = '';
-            if (this.state !== 'flame') this.state = 'idle';
-          }
-        }
-      }
-      draw(ctx, x, y, scale = 3.5) {
-        ctx.save();
-        ctx.translate(x, y);
-
-        this.update();
-
-        // 18x18 Pixel grid for Tsoding Face & Hair
-        const px = scale;
-
-        // Super Saiyan Fire Aura if flame state
-        if (this.state === 'flame') {
-          ctx.fillStyle = 'rgba(255, 200, 0, 0.4)';
-          const flameOffset = Math.sin(this.frame * 0.3) * 3;
-          ctx.beginPath();
-          ctx.arc(9 * px, 9 * px, 13 * px + flameOffset, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // Long Dark Hair & Beard Frame (Dark Brown/Black)
-        ctx.fillStyle = (this.state === 'flame') ? '#ffaa00' : '#1f1610';
-        // Top hair
-        ctx.fillRect(3 * px, 0 * px, 12 * px, 4 * px);
-        // Left hair lock
-        ctx.fillRect(1 * px, 2 * px, 3 * px, 14 * px);
-        // Right hair lock
-        ctx.fillRect(14 * px, 2 * px, 3 * px, 14 * px);
-        // Beard / Chin
-        ctx.fillRect(4 * px, 13 * px, 10 * px, 5 * px);
-        ctx.fillRect(5 * px, 18 * px, 8 * px, 2 * px);
-
-        // Face Skin Tone
-        ctx.fillStyle = (this.state === 'crying') ? '#b0c4de' : '#f5cba7';
-        ctx.fillRect(4 * px, 4 * px, 10 * px, 9 * px);
-
-        // Glasses (Black Frames)
-        ctx.fillStyle = '#0a0a0a';
-        ctx.fillRect(4 * px, 6 * px, 4 * px, 1 * px);
-        ctx.fillRect(10 * px, 6 * px, 4 * px, 1 * px);
-        ctx.fillRect(4 * px, 9 * px, 4 * px, 1 * px);
-        ctx.fillRect(10 * px, 9 * px, 4 * px, 1 * px);
-        ctx.fillRect(4 * px, 7 * px, 1 * px, 2 * px);
-        ctx.fillRect(7 * px, 7 * px, 1 * px, 2 * px);
-        ctx.fillRect(10 * px, 7 * px, 1 * px, 2 * px);
-        ctx.fillRect(13 * px, 7 * px, 1 * px, 2 * px);
-        ctx.fillRect(8 * px, 7 * px, 2 * px, 1 * px); // bridge
-
-        // Glass Glare / Eyes
-        if (this.state === 'crying') {
-          // Closed crying eyes
-          ctx.fillStyle = '#4477aa';
-          ctx.fillRect(5 * px, 7 * px, 2 * px, 2 * px);
-          ctx.fillRect(11 * px, 7 * px, 2 * px, 2 * px);
-          // Tears
-          ctx.fillStyle = '#00e5ff';
-          ctx.fillRect(5 * px, 10 * px, 2 * px, 4 * px + (this.frame % 3));
-          ctx.fillRect(11 * px, 10 * px, 2 * px, 4 * px + ((this.frame + 1) % 3));
-        } else if (this.state === 'flame') {
-          // Glowing yellow/red eyes of pure collision power
-          ctx.fillStyle = '#ff2200';
-          ctx.fillRect(5 * px, 7 * px, 2 * px, 2 * px);
-          ctx.fillRect(11 * px, 7 * px, 2 * px, 2 * px);
-        } else {
-          // Normal/Smug eyes
-          ctx.fillStyle = '#2b1b17';
-          ctx.fillRect(5 * px, 7 * px, 2 * px, 2 * px);
-          ctx.fillRect(11 * px, 7 * px, 2 * px, 2 * px);
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(5 * px, 7 * px, 1 * px, 1 * px);
-          ctx.fillRect(11 * px, 7 * px, 1 * px, 1 * px);
-        }
-
-        // Mustache & Mouth
-        ctx.fillStyle = (this.state === 'flame') ? '#ffaa00' : '#1f1610';
-        ctx.fillRect(6 * px, 11 * px, 6 * px, 2 * px); // mustache
-
-        if (this.state === 'shout' || this.state === 'flame') {
-          // Open screaming mouth ("BLYAT!")
-          ctx.fillStyle = '#800000';
-          ctx.fillRect(7 * px, 13 * px, 4 * px, 3 * px);
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(8 * px, 13 * px, 2 * px, 1 * px); // teeth
-        } else if (this.state === 'smug') {
-          // Smug grin
-          ctx.fillStyle = '#1f1610';
-          ctx.fillRect(8 * px, 13 * px, 3 * px, 1 * px);
-          ctx.fillRect(11 * px, 12 * px, 1 * px, 1 * px);
-        } else {
-          // Straight neutral coder line
-          ctx.fillStyle = '#1f1610';
-          ctx.fillRect(7 * px, 13 * px, 4 * px, 1 * px);
-        }
-
-        // Speech Bubble if shouting/talking
-        if (this.speechBubble) {
-          ctx.save();
-          ctx.font = 'bold 12px "Courier New", monospace';
-          const textWidth = ctx.measureText(this.speechBubble).width;
-          const bubbleX = 18 * px + 8;
-          const bubbleY = 2 * px;
-          ctx.fillStyle = '#051805';
-          ctx.strokeStyle = '#33ff33';
-          ctx.lineWidth = 1.5;
-          ctx.fillRect(bubbleX, bubbleY - 14, textWidth + 14, 26);
-          ctx.strokeRect(bubbleX, bubbleY - 14, textWidth + 14, 26);
-          // Little speech arrow
-          ctx.fillStyle = '#33ff33';
-          ctx.beginPath();
-          ctx.moveTo(bubbleX, bubbleY);
-          ctx.lineTo(bubbleX - 6, bubbleY - 4);
-          ctx.lineTo(bubbleX, bubbleY - 8);
-          ctx.fill();
-
-          ctx.fillStyle = (this.state === 'crying') ? '#ff3333' : '#33ff33';
-          ctx.fillText(this.speechBubble, bubbleX + 7, bubbleY + 4);
-          ctx.restore();
-        }
-
         ctx.restore();
       }
     }
 
     // --- Main Game Engine ---
-    class HuidGame {
+    class TerminalGame {
       constructor() {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.sound = new SoundEngine();
 
-        this.width = 960;
-        this.height = 640;
+        this.width = 1000;
+        this.height = 680;
 
-        // Game State Variables
+        // Load Real Tsoding Images
+        this.avatarImg = new Image();
+        this.avatarImg.src = TSODING_AVATAR_B64;
+        this.clownImg = new Image();
+        this.clownImg.src = TSODING_CLOWN_B64;
+
+        // Game State
         this.score = 0;
         this.highScore = parseInt(localStorage.getItem('huid_high_score') || '0', 10);
         this.collisionsThisSec = 0;
-        this.lastSecondTracked = -1;
+        this.lastSec = -1;
         this.currentHuidStr = '';
         this.activeSecondMs = 0;
 
-        // Velocity & Multiplier
         this.pointVelocity = 1.0;
         this.multiplier = 1.0;
-        this.consecutiveCollisionSecs = 0;
+        this.consecutiveSecs = 0;
         this.totalCollisions = 0;
-        this.peakCollisionsPerSec = 0;
+        this.peakCollisions = 0;
 
-        // Prompts & Traps
-        this.promptIndex = 0;
+        // Terminal Scrolling Lines Buffer
+        this.terminalLines = [
+          { text: "Linux tsoding-box 6.8.0-huid x86_64 GNU/Linux", color: "#888888" },
+          { text: "HUID Collider v2.0 - Initialized real-time timestamp clock.", color: "#888888" },
+          { text: "Type [Y] to approve creation & generate high-velocity collisions.", color: "#00e5ff" },
+          { text: "WARNING: Watch out for [TRAP] lines. Reject them with [N]!", color: "#ffea00" },
+          { text: "----------------------------------------------------------------------", color: "#336633" }
+        ];
+        this.maxTerminalLines = 22;
+
+        // Current Active Prompt
         this.currentPrompt = null;
         this.isTrap = false;
-        this.terminalLogs = [];
-        this.maxLogs = 8;
+        this.promptBlink = 0;
 
-        // Game Visual FX
+        // Visuals
         this.screenShake = 0;
         this.flashRed = 0;
         this.particles = [];
-        this.avatar = new TsodingAvatar();
+        this.avatarMode = 'normal'; // 'normal', 'clown', 'combo'
+        this.avatarQuote = 'da_append(&da, item);';
+        this.quoteTimer = 120;
 
-        // Lemmings Platforms
-        this.platforms = [];
-        this.lemmings = [];
-
-        // Interactive Canvas Buttons (for mouse & touch)
-        this.buttons = [];
-
-        // Modals & Tabs
-        this.viewMode = 'game'; // 'game', 'hall_of_fame'
+        // Modals
+        this.viewMode = 'terminal'; // 'terminal', 'hall_of_fame'
         this.scoresList = JSON.parse(localStorage.getItem('huid_leaderboard') || '[]');
 
+        // Lemmings
+        this.lineYs = [];
+        this.lemmings = [];
+
+        // Interactive Buttons
+        this.buttons = [];
+
         this.initCanvasSize();
-        this.setupEventListeners();
-        this.setupPlatforms();
-        this.setupLemmings(6);
+        this.setupButtons();
         this.nextPrompt();
+        this.setupLemmings(5);
+        this.setupEventListeners();
 
         this.lastFrameTime = performance.now();
         requestAnimationFrame((t) => this.loop(t));
@@ -693,7 +511,7 @@
           const maxW = container.clientWidth - 20;
           const maxH = container.clientHeight - 20;
 
-          const aspect = 960 / 640;
+          const aspect = 1000 / 680;
           let w = maxW;
           let h = w / aspect;
           if (h > maxH) {
@@ -701,50 +519,44 @@
             w = h * aspect;
           }
 
-          this.canvas.style.width = `${Math.floor(w)}px`;
-          this.canvas.style.height = `${Math.floor(h)}px`;
+          this.canvas.style.width = Math.floor(w) + 'px';
+          this.canvas.style.height = Math.floor(h) + 'px';
 
           const dpr = Math.min(window.devicePixelRatio || 1, 2);
-          this.canvas.width = Math.floor(960 * dpr);
-          this.canvas.height = Math.floor(640 * dpr);
+          this.canvas.width = Math.floor(1000 * dpr);
+          this.canvas.height = Math.floor(680 * dpr);
           this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-          this.scaleX = 960 / w;
-          this.scaleY = 640 / h;
-
-          this.setupPlatforms();
           this.setupButtons();
         };
         window.addEventListener('resize', resize);
         resize();
       }
 
-      setupPlatforms() {
-        // Physical edges in the terminal for Lemmings to walk on
-        this.platforms = [
-          { x1: 30, x2: 930, y: 70 },   // Top header bar
-          { x1: 30, x2: 660, y: 310 },  // Prompt box top ledge
-          { x1: 30, x2: 660, y: 440 },  // Prompt box bottom ledge
-          { x1: 670, x2: 930, y: 310 }, // Avatar box bottom
-          { x1: 30, x2: 930, y: 550 }   // Action console shelf
+      setupButtons() {
+        this.buttons = [
+          { id: 'btn_yes', text: '[ Y: APPROVE & COLLIDE ]', x: 30, y: 625, w: 260, h: 42, color: '#00ff66', bg: '#082508' },
+          { id: 'btn_no',  text: '[ N: REJECT TRAP ]',      x: 310, y: 625, w: 230, h: 42, color: '#ff3344', bg: '#290808' },
+          { id: 'btn_hof', text: '[ H: TOP 10 ]',           x: 560, y: 625, w: 180, h: 42, color: '#00e5ff', bg: '#081d26' },
+          { id: 'btn_mute',text: '[ M: AUDIO ]',            x: 760, y: 625, w: 200, h: 42, color: '#ffea00', bg: '#252008' }
         ];
       }
 
-      setupLemmings(count = 6) {
+      setupLemmings(count = 5) {
         this.lemmings = [];
+        this.updateLineYs();
         for (let i = 0; i < count; i++) {
-          this.lemmings.push(new Lemming(960, this.platforms));
+          this.lemmings.push(new Lemming(1000, this.lineYs));
         }
       }
 
-      setupButtons() {
-        // On-screen clickable buttons
-        this.buttons = [
-          { id: 'btn_yes', text: '[ Y: APPROVE & COLLIDE ]', x: 40, y: 565, w: 260, h: 50, color: '#33ff33', bg: '#082008' },
-          { id: 'btn_no',  text: '[ N: REJECT TRAP ]',      x: 320, y: 565, w: 220, h: 50, color: '#ff4444', bg: '#250808' },
-          { id: 'btn_hof', text: '[ H: TOP 10 ]',           x: 560, y: 565, w: 170, h: 50, color: '#00e5ff', bg: '#081820' },
-          { id: 'btn_mute',text: '[ M: AUDIO ]',            x: 750, y: 565, w: 170, h: 50, color: '#ffb300', bg: '#201808' }
-        ];
+      updateLineYs() {
+        this.lineYs = [];
+        const startY = 85;
+        const lineH = 22;
+        for (let i = 0; i < this.terminalLines.length + 2; i++) {
+          this.lineYs.push(startY + (i * lineH));
+        }
       }
 
       formatHUID(date) {
@@ -754,43 +566,48 @@
         const h = String(date.getHours()).padStart(2, '0');
         const m = String(date.getMinutes()).padStart(2, '0');
         const s = String(date.getSeconds()).padStart(2, '0');
-        return `HUID_${Y}${M}${D}_${h}${m}${s}`;
+        return 'HUID_' + Y + M + D + '_' + h + m + s;
+      }
+
+      setAvatarQuote(quote, mode = 'normal', duration = 100) {
+        this.avatarQuote = quote;
+        this.avatarMode = mode;
+        this.quoteTimer = duration;
       }
 
       nextPrompt() {
-        // 22% chance of trap task
         this.isTrap = Math.random() < 0.22;
         if (this.isTrap) {
-          const trapText = TRAP_TASKS[Math.floor(Math.random() * TRAP_TASKS.length)];
-          this.currentPrompt = { text: trapText, trap: true };
+          const txt = TRAP_TASKS[Math.floor(Math.random() * TRAP_TASKS.length)];
+          this.currentPrompt = { text: txt, trap: true };
           if (Math.random() < 0.4) {
-            this.avatar.setState('idle', 'Wait a second... smell that?');
+            this.setAvatarQuote("Wait... do NOT approve that!", "clown", 90);
           }
         } else {
-          const safeText = SAFE_TASKS[Math.floor(Math.random() * SAFE_TASKS.length)];
-          this.currentPrompt = { text: safeText, trap: false };
-        }
-        this.promptIndex++;
-      }
-
-      addLog(text, color = '#33ff33') {
-        this.terminalLogs.push({ text, color, time: Date.now() });
-        if (this.terminalLogs.length > this.maxLogs) {
-          this.terminalLogs.shift();
+          const txt = SAFE_TASKS[Math.floor(Math.random() * SAFE_TASKS.length)];
+          this.currentPrompt = { text: txt, trap: false };
         }
       }
 
-      spawnCoins(count = 3, originX = 350, originY = 360) {
+      appendTerminalLine(text, color = '#33ff33') {
+        this.terminalLines.push({ text, color });
+        if (this.terminalLines.length > this.maxTerminalLines) {
+          this.terminalLines.shift();
+        }
+        this.updateLineYs();
+      }
+
+      spawnCoins(count = 3, originX = 400, originY = 560) {
         for (let i = 0; i < count; i++) {
           this.particles.push(new Particle(originX, originY, 'coin'));
         }
       }
 
-      spawnText(text, x, y, color = '#ffff00') {
+      spawnText(text, x, y, color = '#ffea00') {
         this.particles.push(new Particle(x, y, 'text', text, color));
       }
 
-      spawnSparks(count = 15, x = 350, y = 360, color = '#33ff33') {
+      spawnSparks(count = 12, x = 400, y = 560, color = '#00ff66') {
         for (let i = 0; i < count; i++) {
           this.particles.push(new Particle(x, y, 'spark', '', color));
         }
@@ -798,57 +615,55 @@
 
       triggerCatastrophicReset() {
         this.sound.playCatastrophe();
-        this.flashRed = 30;
+        this.flashRed = 35;
         this.screenShake = 22;
 
         const lostScore = this.score;
         this.score = 0;
         this.multiplier = 1.0;
         this.pointVelocity = 1.0;
-        this.consecutiveCollisionSecs = 0;
+        this.consecutiveSecs = 0;
 
-        this.avatar.setState('crying', 'BLYAT! WHO APPROVED THIS?!', 140);
-        this.spawnText(`SCORE WIPED! (-${lostScore})`, 280, 360, '#ff2222');
-        this.addLog(`[CATASTROPHE] You accepted forbidden trap: "${this.currentPrompt.text}"`, '#ff3333');
-        this.addLog(`[RESET] Score reset to 0! Absolute blyat moment.`, '#ff5555');
+        this.setAvatarQuote("BLYAT! SCORE IS ZERO!", "clown", 160);
 
+        this.appendTerminalLine('tsoding@collider:~$ ' + this.currentPrompt.text + ' [y/N]? y', '#ff3344');
+        this.appendTerminalLine('[CATASTROPHE] You accepted forbidden trap! Score reset to 0! (-' + lostScore + ')', '#ff2244');
+        this.appendTerminalLine('[FATAL] BLYAT! Core dumped. Back to square one.', '#ff6666');
+
+        this.spawnText('SCORE WIPED! 0', 350, 520, '#ff1111');
         this.nextPrompt();
       }
 
       handleYesAction() {
         if (this.viewMode === 'hall_of_fame') {
-          this.viewMode = 'game';
+          this.viewMode = 'terminal';
           return;
         }
 
         const now = new Date();
-        const currentSec = now.getSeconds();
+        const curSec = now.getSeconds();
 
-        // TRAP CHECK: Pressed Yes on a trap? INSTANT SCORE ZERO!
+        // TRAP CHECK
         if (this.currentPrompt && this.currentPrompt.trap) {
           this.triggerCatastrophicReset();
           return;
         }
 
-        // Check if inside same second
-        if (currentSec === this.lastSecondTracked) {
-          // COLLISION OCCURRED!
+        const promptText = this.currentPrompt ? this.currentPrompt.text : 'da_append(&da, item);';
+
+        if (curSec === this.lastSec) {
+          // COLLISION!
           this.collisionsThisSec++;
           this.totalCollisions++;
-
-          if (this.collisionsThisSec > this.peakCollisionsPerSec) {
-            this.peakCollisionsPerSec = this.collisionsThisSec;
+          if (this.collisionsThisSec > this.peakCollisions) {
+            this.peakCollisions = this.collisionsThisSec;
           }
 
-          // Points scale exponentially with collision count in this second
-          const collisionBasePoints = 50 * Math.pow(1.8, Math.min(this.collisionsThisSec - 1, 6));
-          const earned = Math.round(collisionBasePoints * this.multiplier);
+          const base = 50 * Math.pow(1.8, Math.min(this.collisionsThisSec - 1, 6));
+          const earned = Math.round(base * this.multiplier);
           this.score += earned;
+          this.pointVelocity = Math.min(25.0, this.pointVelocity + 0.7);
 
-          // Velocity Boost
-          this.pointVelocity = Math.min(25.0, this.pointVelocity + 0.65);
-
-          // Audio & Visual Juice
           const pitch = 1 + (this.collisionsThisSec * 0.15);
           this.sound.playCoin(pitch);
           if (this.collisionsThisSec >= 4) {
@@ -856,32 +671,33 @@
           }
 
           this.screenShake = Math.min(18, 3 + this.collisionsThisSec * 1.5);
-          this.spawnCoins(Math.min(6, 1 + Math.floor(this.collisionsThisSec / 2)), 360, 370);
-          this.spawnSparks(10, 360, 370, '#33ff33');
-          this.spawnText(`COLLISION #${this.collisionsThisSec}! +${earned}`, 320, 340, '#ffff00');
+          this.spawnCoins(Math.min(5, 1 + Math.floor(this.collisionsThisSec / 2)), 420, 560);
+          this.spawnSparks(12, 420, 560, '#00ff66');
+          this.spawnText('💥 COLLISION #' + this.collisionsThisSec + '! +' + earned, 350, 530, '#ffea00');
 
-          // Avatar reactions
           if (this.collisionsThisSec === 2) {
-            this.avatar.setState('smug', 'Collision detected!');
+            this.setAvatarQuote("Collision detected!", "normal", 60);
           } else if (this.collisionsThisSec === 4) {
-            this.avatar.setState('shout', 'BLYAT! KEEP MASHING!');
+            this.setAvatarQuote("KEEP MASHING BLYAT!", "combo", 90);
           } else if (this.collisionsThisSec >= 7) {
-            this.avatar.setState('flame', 'MAXIMUM OVERCLOCK!');
+            this.setAvatarQuote("SPEED OF LIGHT!", "combo", 120);
           }
 
-          this.addLog(`[COLLISION #${this.collisionsThisSec}] ${this.currentHuidStr} (+${earned} pts)`, '#ffea00');
+          this.appendTerminalLine('tsoding@collider:~$ ' + promptText + ' [y/N]? y', '#00ff66');
+          this.appendTerminalLine('--> [💥 COLLISION #' + this.collisionsThisSec + '] ' + this.currentHuidStr + ' (+' + earned + ' pts)', '#ffea00');
         } else {
           // First approval in new second
-          this.lastSecondTracked = currentSec;
+          this.lastSec = curSec;
           this.collisionsThisSec = 1;
 
           const earned = Math.round(15 * this.multiplier);
           this.score += earned;
           this.sound.playClick();
-          this.spawnSparks(4, 360, 370, '#00e5ff');
-          this.spawnText(`CREATED +${earned}`, 340, 350, '#33ff33');
+          this.spawnSparks(5, 420, 560, '#00e5ff');
+          this.spawnText('CREATED +' + earned, 380, 540, '#00ff66');
 
-          this.addLog(`[TASK CREATED] ${this.currentHuidStr} (+${earned} pts)`, '#33ff33');
+          this.appendTerminalLine('tsoding@collider:~$ ' + promptText + ' [y/N]? y', '#00ff66');
+          this.appendTerminalLine('--> [CREATED] ' + this.currentHuidStr + ' (+' + earned + ' pts)', '#33ff55');
         }
 
         if (this.score > this.highScore) {
@@ -894,24 +710,28 @@
 
       handleNoAction() {
         if (this.viewMode === 'hall_of_fame') {
-          this.viewMode = 'game';
+          this.viewMode = 'terminal';
           return;
         }
 
+        const promptText = this.currentPrompt ? this.currentPrompt.text : '';
+
         if (this.currentPrompt && this.currentPrompt.trap) {
-          // Successfully defused trap!
+          // Defused!
           const bonus = Math.round(250 * this.multiplier);
           this.score += bonus;
           this.sound.playDefuse();
           this.sound.playJackpot(2);
-          this.spawnSparks(16, 360, 370, '#00e5ff');
-          this.spawnText(`TRAP DEFUSED! +${bonus}`, 320, 340, '#00e5ff');
-          this.avatar.setState('smug', 'Nice catch! No CMake here.');
-          this.addLog(`[DEFUSED] Rejected trap: "${this.currentPrompt.text}" (+${bonus} pts)`, '#00e5ff');
+          this.spawnSparks(16, 420, 560, '#00e5ff');
+          this.spawnText('🛡️ TRAP DEFUSED! +' + bonus, 340, 530, '#00e5ff');
+          this.setAvatarQuote("Good reject! No bloat here.", "normal", 80);
+
+          this.appendTerminalLine('tsoding@collider:~$ ' + promptText + ' [y/N]? n', '#ff3344');
+          this.appendTerminalLine('--> [🛡️ DEFUSED] Rejected trap! (+' + bonus + ' pts)', '#00e5ff');
         } else {
-          // Skipped normal task
           this.sound.playClick();
-          this.addLog(`[SKIPPED] "${this.currentPrompt.text.slice(0, 32)}..."`, '#888888');
+          this.appendTerminalLine('tsoding@collider:~$ ' + promptText + ' [y/N]? n', '#666666');
+          this.appendTerminalLine('--> [SKIPPED] Task deferred.', '#555555');
         }
 
         this.nextPrompt();
@@ -922,7 +742,7 @@
         const entry = {
           score: this.score,
           collisions: this.totalCollisions,
-          peakRate: this.peakCollisionsPerSec,
+          peakRate: this.peakCollisions,
           multiplier: this.multiplier.toFixed(1),
           date: new Date().toISOString().replace('T', ' ').slice(0, 19)
         };
@@ -933,24 +753,23 @@
       }
 
       toggleHallOfFame() {
-        this.viewMode = (this.viewMode === 'game') ? 'hall_of_fame' : 'game';
+        this.viewMode = (this.viewMode === 'terminal') ? 'hall_of_fame' : 'terminal';
         if (this.viewMode === 'hall_of_fame') {
           this.saveScoreToLeaderboard();
         }
       }
 
       copyBragToClipboard() {
-        const text = `🏆 I scored ${this.score.toLocaleString()} points with ${this.peakCollisionsPerSec} collisions/sec in HUID BLYAT! Can you beat my Tsoding collider?`;
+        const text = '🏆 I scored ' + this.score.toLocaleString() + ' points with ' + this.peakCollisions + ' collisions/sec in HUID BLYAT! Can you beat my Tsoding collider?';
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text);
-          this.spawnText('COPIED TO CLIPBOARD!', 400, 320, '#00e5ff');
+          this.spawnText('COPIED TO CLIPBOARD!', 420, 320, '#00e5ff');
         }
       }
 
       setupEventListeners() {
         window.addEventListener('keydown', (e) => {
           this.sound.init();
-
           if (e.key === 'y' || e.key === 'Y' || e.key === ' ' || e.key === 'Enter') {
             e.preventDefault();
             this.handleYesAction();
@@ -970,12 +789,11 @@
         const handlePointer = (clientX, clientY) => {
           this.sound.init();
           const rect = this.canvas.getBoundingClientRect();
-          const scaleX = 960 / rect.width;
-          const scaleY = 640 / rect.height;
+          const scaleX = 1000 / rect.width;
+          const scaleY = 680 / rect.height;
           const x = (clientX - rect.left) * scaleX;
           const y = (clientY - rect.top) * scaleY;
 
-          // Check interactive buttons
           for (const btn of this.buttons) {
             if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
               if (btn.id === 'btn_yes') this.handleYesAction();
@@ -986,18 +804,13 @@
             }
           }
 
-          // If in Hall of Fame, tapping center closes it
           if (this.viewMode === 'hall_of_fame') {
-            if (y > 480) {
-              this.copyBragToClipboard();
-            } else {
-              this.viewMode = 'game';
-            }
+            if (y > 520) this.copyBragToClipboard();
+            else this.viewMode = 'terminal';
             return;
           }
 
-          // Tapping anywhere on canvas also defaults to Yes mash for speed
-          if (y < 550) {
+          if (y < 610) {
             this.handleYesAction();
           }
         };
@@ -1015,281 +828,225 @@
         this.currentHuidStr = this.formatHUID(now);
         this.activeSecondMs = now.getMilliseconds();
 
-        // Check if second changed: evaluate consecutive seconds chain
-        const currentSec = now.getSeconds();
-        if (this.lastSecondTracked !== -1 && currentSec !== this.lastSecondTracked) {
+        const curSec = now.getSeconds();
+        if (this.lastSec !== -1 && curSec !== this.lastSec) {
           if (this.collisionsThisSec >= 2) {
-            this.consecutiveCollisionSecs++;
-            // Boost multiplier
-            this.multiplier = Math.min(10.0, 1.0 + (this.consecutiveCollisionSecs * 0.45));
+            this.consecutiveSecs++;
+            this.multiplier = Math.min(10.0, 1.0 + (this.consecutiveSecs * 0.45));
           } else {
-            // Decay consecutive chain if mash slowed down
-            this.consecutiveCollisionSecs = Math.max(0, this.consecutiveCollisionSecs - 1);
+            this.consecutiveSecs = Math.max(0, this.consecutiveSecs - 1);
             this.multiplier = Math.max(1.0, this.multiplier - 0.25);
           }
           this.collisionsThisSec = 0;
-          this.lastSecondTracked = currentSec;
+          this.lastSec = curSec;
         }
 
-        // Velocity Decay over time
         this.pointVelocity = Math.max(1.0, this.pointVelocity - (dt * 0.8));
 
-        // Screen Shake decay
         if (this.screenShake > 0) {
           this.screenShake *= 0.88;
           if (this.screenShake < 0.2) this.screenShake = 0;
         }
-
-        // Red flash decay
         if (this.flashRed > 0) this.flashRed--;
 
-        // Update Lemmings
-        for (const lem of this.lemmings) {
-          const alive = lem.update(960, 640, this.screenShake);
-          if (!alive) {
-            // Splat into green dust particles & respawn
-            this.spawnSparks(8, lem.x, 630, '#00ff66');
-            lem.reset(960);
+        if (this.quoteTimer > 0) {
+          this.quoteTimer--;
+          if (this.quoteTimer === 0) {
+            this.avatarQuote = 'da_append(&da, item);';
+            this.avatarMode = 'normal';
           }
         }
 
-        // Update Particles
-        this.particles = this.particles.filter((p) => {
+        for (const lem of this.lemmings) {
+          const alive = lem.update(1000, 680, this.lineYs, this.screenShake);
+          if (!alive) {
+            this.spawnSparks(8, lem.x, 600, '#00ff66');
+            lem.reset(1000);
+          }
+        }
+
+        this.particles = this.particles.filter(p => {
           p.update();
           return p.alpha > 0;
         });
+
+        this.promptBlink = (this.promptBlink + 1) % 40;
       }
 
       draw() {
         const ctx = this.ctx;
         ctx.save();
 
-        // Apply Screen Shake
         if (this.screenShake > 0) {
-          const shakeX = (Math.random() - 0.5) * this.screenShake * 2;
-          const shakeY = (Math.random() - 0.5) * this.screenShake * 2;
-          ctx.translate(shakeX, shakeY);
+          const sx = (Math.random() - 0.5) * this.screenShake * 2;
+          const sy = (Math.random() - 0.5) * this.screenShake * 2;
+          ctx.translate(sx, sy);
         }
 
-        // Background
-        ctx.fillStyle = this.flashRed > 0 ? '#300505' : '#040b04';
-        ctx.fillRect(0, 0, 960, 640);
+        ctx.fillStyle = this.flashRed > 0 ? '#260404' : '#030803';
+        ctx.fillRect(0, 0, 1000, 680);
 
-        // Terminal CRT Grid Line Accent
-        ctx.strokeStyle = 'rgba(20, 80, 20, 0.25)';
-        ctx.lineWidth = 1;
-        for (let y = 0; y < 640; y += 32) {
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(960, y);
-          ctx.stroke();
-        }
+        this.drawScanlines(ctx);
+        this.drawStatusBar(ctx);
 
-        // Top Header
-        this.drawHeader(ctx);
-
-        if (this.viewMode === 'game') {
-          // Main Terminal Content
-          this.drawPromptBox(ctx);
-          this.drawTelemetry(ctx);
-          this.drawLogs(ctx);
-          this.drawLemmings(ctx);
-          this.drawParticles(ctx);
+        if (this.viewMode === 'terminal') {
+          this.drawTerminalBuffer(ctx);
+          this.drawActivePrompt(ctx);
+          this.drawTsodingCam(ctx);
+          for (const lem of this.lemmings) lem.draw(ctx);
+          for (const p of this.particles) p.draw(ctx);
           this.drawButtons(ctx);
         } else {
-          // Hall of Fame Screen
           this.drawHallOfFame(ctx);
         }
-
-        // CRT Scanline Overlay Effect
-        this.drawScanlines(ctx);
 
         ctx.restore();
       }
 
-      drawHeader(ctx) {
-        // Outer Border
-        ctx.strokeStyle = '#22cc44';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(20, 15, 920, 610);
-
-        // Title Bar
-        ctx.fillStyle = '#081c08';
-        ctx.fillRect(22, 17, 916, 45);
-        ctx.strokeStyle = '#1d8830';
-        ctx.strokeRect(22, 17, 916, 45);
-
-        ctx.font = 'bold 18px "Courier New", monospace';
-        ctx.fillStyle = '#33ff33';
-        ctx.shadowColor = '#33ff33';
-        ctx.shadowBlur = 6;
-        ctx.fillText('HUID BLYAT! // TSODING HYPER-COLLIDER v1.0.0', 40, 45);
-
-        // Top Clock & HUID Ticker
-        ctx.font = 'bold 16px "Courier New", monospace';
-        ctx.fillStyle = '#ffea00';
-        ctx.shadowColor = '#ffea00';
-        ctx.shadowBlur = 5;
-        ctx.fillText(`CURRENT: ${this.currentHuidStr}`, 610, 45);
-        ctx.shadowBlur = 0;
-      }
-
-      drawPromptBox(ctx) {
-        const boxX = 35;
-        const boxY = 75;
-        const boxW = 620;
-        const boxH = 230;
-
-        // Prompt Box Container
-        ctx.fillStyle = this.isTrap ? '#1a0606' : '#061406';
-        ctx.fillRect(boxX, boxY, boxW, boxH);
-        ctx.strokeStyle = this.isTrap ? '#ff2222' : '#22cc44';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(boxX, boxY, boxW, boxH);
-
-        // Subheader
-        ctx.fillStyle = this.isTrap ? '#ff2222' : '#1d8830';
-        ctx.font = 'bold 13px "Courier New", monospace';
-        const bannerText = this.isTrap
-          ? '⚠ HAZARD DETECTED: SUSPICIOUS TASK PROMPT (PRESS [N] TO REJECT!) ⚠'
-          : '⚡ ACTIVE APPROVAL PROMPT (MASH [Y] RAPIDLY FOR HUID COLLISIONS!) ⚡';
-        ctx.fillText(bannerText, boxX + 15, boxY + 28);
-
-        // Task Text (Word-wrapped)
-        ctx.font = 'bold 17px "Courier New", monospace';
-        ctx.fillStyle = this.isTrap ? '#ff9999' : '#ffffff';
-        const taskMsg = this.currentPrompt ? this.currentPrompt.text : 'da_append(&da, item);';
-        this.wrapText(ctx, taskMsg, boxX + 20, boxY + 70, boxW - 40, 24);
-
-        // Prompt Action Text
-        ctx.font = 'bold 16px "Courier New", monospace';
-        if (this.isTrap) {
-          ctx.fillStyle = '#ff4444';
-          ctx.fillText('DO YOU APPROVE? [y/N]  <-- TRAP! MASHING Y RESETS SCORE TO ZERO!', boxX + 20, boxY + 165);
-        } else {
-          ctx.fillStyle = '#33ff33';
-          ctx.fillText('DO YOU APPROVE? [y/N]  <-- MASH [Y] OR SPACEBAR AS FAST AS POSSIBLE!', boxX + 20, boxY + 165);
-        }
-
-        // Live Second Milliseconds Dial / Gauge
-        const barW = boxW - 40;
-        const barH = 16;
-        const barX = boxX + 20;
-        const barY = boxY + 185;
-        const fillW = (this.activeSecondMs / 1000) * barW;
-
-        ctx.fillStyle = '#112211';
-        ctx.fillRect(barX, barY, barW, barH);
-        ctx.strokeStyle = '#227722';
-        ctx.strokeRect(barX, barY, barW, barH);
-
-        // Color shifts as second nears expiration
-        const hue = Math.floor((1 - (this.activeSecondMs / 1000)) * 120);
-        ctx.fillStyle = `hsl(${hue}, 100%, 45%)`;
-        ctx.fillRect(barX + 1, barY + 1, fillW - 2, barH - 2);
-
-        ctx.font = '11px "Courier New", monospace';
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(`SECOND WINDOW: ${this.activeSecondMs}ms / 1000ms  |  COLLISIONS IN THIS SEC: ${this.collisionsThisSec}`, barX + 8, barY + 12);
-      }
-
-      drawTelemetry(ctx) {
-        // Right Side Box (Scores & Avatar)
-        const sideX = 670;
-        const sideY = 75;
-        const sideW = 250;
-        const sideH = 230;
-
-        ctx.fillStyle = '#061406';
-        ctx.fillRect(sideX, sideY, sideW, sideH);
-        ctx.strokeStyle = '#22cc44';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(sideX, sideY, sideW, sideH);
-
-        // Draw Tsoding Avatar in the box
-        this.avatar.draw(ctx, sideX + 25, sideY + 25, 3.2);
-
-        // Scores HUD
-        ctx.font = 'bold 14px "Courier New", monospace';
-        ctx.fillStyle = '#88ff88';
-        ctx.fillText(`SCORE:`, sideX + 105, sideY + 35);
-        ctx.font = 'bold 22px "Courier New", monospace';
-        ctx.fillStyle = '#ffea00';
-        ctx.shadowColor = '#ffea00';
-        ctx.shadowBlur = 4;
-        ctx.fillText(this.score.toLocaleString(), sideX + 105, sideY + 62);
-        ctx.shadowBlur = 0;
-
-        ctx.font = 'bold 12px "Courier New", monospace';
-        ctx.fillStyle = '#88ff88';
-        ctx.fillText(`HIGH: ${this.highScore.toLocaleString()}`, sideX + 105, sideY + 86);
-        ctx.fillText(`PEAK RATE: ${this.peakCollisionsPerSec}/s`, sideX + 105, sideY + 106);
-
-        // Point Velocity & Multiplier Gauge
-        ctx.fillStyle = '#082008';
-        ctx.fillRect(sideX + 15, sideY + 140, sideW - 30, 75);
-        ctx.strokeStyle = '#1d8830';
-        ctx.strokeRect(sideX + 15, sideY + 140, sideW - 30, 75);
-
-        ctx.font = 'bold 12px "Courier New", monospace';
-        ctx.fillStyle = '#33ff33';
-        ctx.fillText(`POINT VELOCITY`, sideX + 25, sideY + 160);
-
-        // Velocity Bar
-        const velFill = Math.min(1.0, this.pointVelocity / 15) * (sideW - 50);
-        ctx.fillStyle = '#00ff66';
-        ctx.fillRect(sideX + 25, sideY + 168, velFill, 12);
-
-        ctx.font = 'bold 16px "Courier New", monospace';
-        ctx.fillStyle = '#ffea00';
-        ctx.fillText(`MULTIPLIER: ${this.multiplier.toFixed(1)}x`, sideX + 25, sideY + 204);
-      }
-
-      drawLogs(ctx) {
-        // Lower Terminal Log Box
-        const logX = 35;
-        const logY = 320;
-        const logW = 885;
-        const logH = 230;
-
-        ctx.fillStyle = '#030d03';
-        ctx.fillRect(logX, logY, logW, logH);
-        ctx.strokeStyle = '#1d8830';
+      drawStatusBar(ctx) {
+        ctx.fillStyle = '#071607';
+        ctx.fillRect(15, 10, 970, 36);
+        ctx.strokeStyle = '#1b7a2b';
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(logX, logY, logW, logH);
+        ctx.strokeRect(15, 10, 970, 36);
 
-        // Log Header Bar
-        ctx.fillStyle = '#081c08';
-        ctx.fillRect(logX, logY, logW, 26);
-        ctx.font = 'bold 12px "Courier New", monospace';
-        ctx.fillStyle = '#33ff33';
-        ctx.fillText('TERMINAL AUDIT LOG [LIVE CLOCK STREAM]', logX + 15, logY + 18);
+        ctx.font = 'bold 13px Consolas, Courier, monospace';
 
-        // Log entries
-        let lineY = logY + 48;
-        ctx.font = '13px "Courier New", monospace';
-        for (const item of this.terminalLogs) {
+        ctx.fillStyle = '#ffea00';
+        ctx.fillText('[' + this.currentHuidStr + ']', 25, 33);
+
+        ctx.fillStyle = '#33ff55';
+        ctx.fillText('SCORE:', 245, 33);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(this.score.toLocaleString(), 295, 33);
+
+        ctx.fillStyle = '#88ff88';
+        ctx.fillText('HIGH: ' + this.highScore.toLocaleString(), 390, 33);
+
+        ctx.fillStyle = '#ffea00';
+        ctx.fillText('MULT: ' + this.multiplier.toFixed(1) + 'x', 510, 33);
+
+        const velW = Math.min(1.0, this.pointVelocity / 15) * 60;
+        ctx.fillStyle = '#00ff66';
+        ctx.fillRect(595, 23, velW, 10);
+        ctx.strokeStyle = '#228833';
+        ctx.strokeRect(595, 23, 60, 10);
+
+        ctx.fillStyle = '#00e5ff';
+        ctx.fillText('COLL/S: ' + this.collisionsThisSec, 670, 33);
+
+        const secW = (this.activeSecondMs / 1000) * 110;
+        ctx.fillStyle = '#112911';
+        ctx.fillRect(755, 23, 110, 12);
+        ctx.fillStyle = (this.activeSecondMs > 800) ? '#ff3344' : '#00ff66';
+        ctx.fillRect(755, 23, secW, 12);
+        ctx.strokeStyle = '#227722';
+        ctx.strokeRect(755, 23, 110, 12);
+
+        ctx.fillStyle = '#888888';
+        ctx.font = '11px Consolas, Courier, monospace';
+        ctx.fillText(this.activeSecondMs + 'ms', 875, 32);
+      }
+
+      drawTerminalBuffer(ctx) {
+        ctx.font = '14px Consolas, Courier, monospace';
+        let y = 75;
+        const lineH = 22;
+
+        for (const item of this.terminalLines) {
           ctx.fillStyle = item.color || '#33ff33';
-          ctx.fillText(`> ${item.text}`, logX + 18, lineY);
-          lineY += 21;
-        }
-
-        // Blinking Terminal Cursor at the end
-        if (Math.floor(Date.now() / 400) % 2 === 0) {
-          ctx.fillStyle = '#33ff33';
-          ctx.fillRect(logX + 18, lineY - 12, 10, 15);
+          ctx.fillText(item.text, 30, y);
+          y += lineH;
         }
       }
 
-      drawLemmings(ctx) {
-        for (const lem of this.lemmings) {
-          lem.draw(ctx);
+      drawActivePrompt(ctx) {
+        const promptY = 575;
+        const promptH = 34;
+
+        if (this.isTrap) {
+          // VIVID RED ALERT FOR TRAP
+          ctx.fillStyle = 'rgba(255, 30, 60, 0.22)';
+          ctx.fillRect(20, promptY - 24, 960, promptH);
+          ctx.strokeStyle = '#ff2244';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(20, promptY - 24, 960, promptH);
+
+          ctx.font = 'bold 12px Consolas, Courier, monospace';
+          ctx.fillStyle = '#ff2244';
+          ctx.fillText('[ ⚠️ HAZARD TRAP! PRESS [N] TO REJECT ⚠️ ]', 30, promptY - 30);
+
+          ctx.font = 'bold 15px Consolas, Courier, monospace';
+          ctx.fillStyle = '#ff4455';
+          const txt = 'tsoding@collider:~$ ' + (this.currentPrompt ? this.currentPrompt.text : '');
+          ctx.fillText(txt, 30, promptY - 2);
+
+          if (this.promptBlink < 20) {
+            const w = ctx.measureText(txt).width;
+            ctx.fillStyle = '#ff2244';
+            ctx.fillRect(32 + w, promptY - 16, 10, 16);
+          }
+        } else {
+          // BRIGHT PHOSPHOR GREEN FOR SAFE TASK
+          ctx.fillStyle = 'rgba(0, 255, 80, 0.08)';
+          ctx.fillRect(20, promptY - 24, 960, promptH);
+          ctx.strokeStyle = '#00ff66';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(20, promptY - 24, 960, promptH);
+
+          ctx.font = 'bold 12px Consolas, Courier, monospace';
+          ctx.fillStyle = '#00ff66';
+          ctx.fillText('[ SAFE PROMPT: MASH [Y] FAST FOR HUID COLLISIONS! ]', 30, promptY - 30);
+
+          ctx.font = 'bold 15px Consolas, Courier, monospace';
+          ctx.fillStyle = '#33ff77';
+          const txt = 'tsoding@collider:~$ ' + (this.currentPrompt ? this.currentPrompt.text : '') + ' [y/N]?';
+          ctx.fillText(txt, 30, promptY - 2);
+
+          if (this.promptBlink < 20) {
+            const w = ctx.measureText(txt).width;
+            ctx.fillStyle = '#00ff66';
+            ctx.fillRect(32 + w, promptY - 16, 10, 16);
+          }
         }
       }
 
-      drawParticles(ctx) {
-        for (const p of this.particles) {
-          p.draw(ctx);
+      drawTsodingCam(ctx) {
+        const camX = 850;
+        const camY = 60;
+        const camSize = 90;
+
+        ctx.fillStyle = '#051105';
+        ctx.fillRect(camX, camY, camSize, camSize);
+        ctx.strokeStyle = (this.avatarMode === 'clown') ? '#ff2244' : '#00ff66';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(camX, camY, camSize, camSize);
+
+        const img = (this.avatarMode === 'clown') ? this.clownImg : this.avatarImg;
+        if (img.complete && img.naturalWidth > 0) {
+          ctx.drawImage(img, camX + 2, camY + 2, camSize - 4, camSize - 4);
+        }
+
+        ctx.fillStyle = (this.avatarMode === 'clown') ? '#ff2244' : '#00ff66';
+        ctx.font = 'bold 10px Consolas, Courier, monospace';
+        ctx.fillText(this.avatarMode === 'clown' ? '● BLYAT' : '● REC', camX + 8, camY + 14);
+
+        if (this.avatarQuote) {
+          ctx.save();
+          ctx.font = 'bold 12px Consolas, Courier, monospace';
+          const tw = ctx.measureText(this.avatarQuote).width;
+          const bubbleX = camX - tw - 24;
+          const bubbleY = camY + 25;
+
+          ctx.fillStyle = '#061606';
+          ctx.strokeStyle = (this.avatarMode === 'clown') ? '#ff2244' : '#00ff66';
+          ctx.lineWidth = 1.5;
+          ctx.fillRect(bubbleX, bubbleY - 16, tw + 16, 26);
+          ctx.strokeRect(bubbleX, bubbleY - 16, tw + 16, 26);
+
+          ctx.fillStyle = (this.avatarMode === 'clown') ? '#ff4444' : '#33ff77';
+          ctx.fillText(this.avatarQuote, bubbleX + 8, bubbleY + 2);
+          ctx.restore();
         }
       }
 
@@ -1301,84 +1058,66 @@
           ctx.lineWidth = 2;
           ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
 
-          ctx.font = 'bold 13px "Courier New", monospace';
+          ctx.font = 'bold 13px Consolas, Courier, monospace';
           ctx.fillStyle = btn.color;
           ctx.shadowColor = btn.color;
           ctx.shadowBlur = 4;
-          const textW = ctx.measureText(btn.text).width;
-          ctx.fillText(btn.text, btn.x + (btn.w - textW) / 2, btn.y + 30);
+          const tw = ctx.measureText(btn.text).width;
+          ctx.fillText(btn.text, btn.x + (btn.w - tw) / 2, btn.y + 26);
           ctx.shadowBlur = 0;
         }
       }
 
       drawHallOfFame(ctx) {
-        ctx.fillStyle = 'rgba(3, 12, 3, 0.95)';
-        ctx.fillRect(40, 80, 880, 460);
+        ctx.fillStyle = 'rgba(2, 10, 2, 0.96)';
+        ctx.fillRect(40, 60, 920, 520);
         ctx.strokeStyle = '#00e5ff';
         ctx.lineWidth = 2;
-        ctx.strokeRect(40, 80, 880, 460);
+        ctx.strokeRect(40, 60, 920, 520);
 
-        ctx.font = 'bold 24px "Courier New", monospace';
+        ctx.font = 'bold 22px Consolas, Courier, monospace';
         ctx.fillStyle = '#00e5ff';
         ctx.shadowColor = '#00e5ff';
         ctx.shadowBlur = 8;
-        ctx.fillText('★ LOCAL HALL OF FAME - TOP 10 TSODING COLLIDERS ★', 75, 125);
+        ctx.fillText('★ LOCAL HALL OF FAME - TOP 10 TSODING COLLIDERS ★', 70, 110);
         ctx.shadowBlur = 0;
 
-        ctx.font = 'bold 14px "Courier New", monospace';
+        ctx.font = 'bold 14px Consolas, Courier, monospace';
         ctx.fillStyle = '#88ff88';
-        ctx.fillText('RANK   SCORE       PEAK RATE   TOTAL COLL.   DATE (UTC)', 80, 170);
-        ctx.strokeStyle = '#1d8830';
+        ctx.fillText('RANK   SCORE         PEAK RATE     TOTAL COLL.   DATE (UTC)', 70, 160);
+        ctx.strokeStyle = '#1b7a2b';
         ctx.beginPath();
-        ctx.moveTo(80, 180);
-        ctx.lineTo(870, 180);
+        ctx.moveTo(70, 172);
+        ctx.lineTo(920, 172);
         ctx.stroke();
 
-        let rowY = 210;
+        let rowY = 205;
         if (this.scoresList.length === 0) {
           ctx.fillStyle = '#888888';
-          ctx.fillText('No scores recorded yet. Mash [Y] to generate high-speed collisions!', 80, rowY);
+          ctx.fillText('No scores recorded yet. Mash [Y] to generate high-speed collisions!', 70, rowY);
         } else {
           this.scoresList.forEach((item, idx) => {
-            ctx.fillStyle = (idx === 0) ? '#ffea00' : (idx < 3 ? '#ffffff' : '#33ff33');
-            const rankStr = `#${idx + 1}`.padEnd(6, ' ');
-            const scoreStr = item.score.toLocaleString().padEnd(12, ' ');
-            const rateStr = `${item.peakRate}/s`.padEnd(12, ' ');
-            const collStr = String(item.collisions).padEnd(14, ' ');
-            const dateStr = item.date || '2026-10-11';
-            ctx.fillText(`${rankStr} ${scoreStr} ${rateStr} ${collStr} ${dateStr}`, 80, rowY);
-            rowY += 25;
+            ctx.fillStyle = (idx === 0) ? '#ffea00' : (idx < 3 ? '#ffffff' : '#33ff55');
+            const rStr = ('#' + (idx + 1)).padEnd(6, ' ');
+            const sStr = item.score.toLocaleString().padEnd(14, ' ');
+            const rateStr = (item.peakRate + '/s').padEnd(14, ' ');
+            const cStr = String(item.collisions).padEnd(14, ' ');
+            const dStr = item.date || '2026-10-11';
+            ctx.fillText(rStr + ' ' + sStr + ' ' + rateStr + ' ' + cStr + ' ' + dStr, 70, rowY);
+            rowY += 28;
           });
         }
 
-        // Instructions Footer
-        ctx.font = 'bold 15px "Courier New", monospace';
+        ctx.font = 'bold 15px Consolas, Courier, monospace';
         ctx.fillStyle = '#ffea00';
-        ctx.fillText('PRESS [H] OR [TAB] TO RETURN TO GAME  |  PRESS [C] TO COPY BRAG / ISSUE SNIPPET', 80, 500);
+        ctx.fillText('PRESS [H] OR [TAB] TO RETURN  |  PRESS [C] TO COPY BRAGGING SNIPPET', 70, 540);
       }
 
       drawScanlines(ctx) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
-        for (let y = 0; y < 640; y += 4) {
-          ctx.fillRect(0, y, 960, 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
+        for (let y = 0; y < 680; y += 4) {
+          ctx.fillRect(0, y, 1000, 2);
         }
-      }
-
-      wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-        const words = text.split(' ');
-        let line = '';
-        for (let n = 0; n < words.length; n++) {
-          const testLine = line + words[n] + ' ';
-          const metrics = ctx.measureText(testLine);
-          if (metrics.width > maxWidth && n > 0) {
-            ctx.fillText(line, x, y);
-            line = words[n] + ' ';
-            y += lineHeight;
-          } else {
-            line = testLine;
-          }
-        }
-        ctx.fillText(line, x, y);
       }
 
       loop(timestamp) {
@@ -1392,9 +1131,8 @@
       }
     }
 
-    // Start Game on Page Load
     window.addEventListener('load', () => {
-      new HuidGame();
+      new TerminalGame();
     });
   </script>
 </body>
