@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>HUID BLYAT! - The Tsoding Collision Collider</title>
+  <meta name="description" content="A retro 80s canvas terminal game about generating HUID collisions and avoiding catastrophic traps. Inspired by Tsoding.">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: #050805;
+      color: #33ff33;
+      overflow: hidden;
+      font-family: 'Courier New', Courier, monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at center, #0a140a 0%, #030503 100%);
+    }
+    canvas {
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      cursor: crosshair;
+      box-shadow: 0 0 35px rgba(20, 255, 50, 0.25);
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       HUID BLYAT! - THE TSODING COLLISION COLLIDER
+       100% Canvas Game in Pure JavaScript (Zero external assets)
+       ========================================================================== */
+
+    // --- Audio Synthesizer (Web Audio API) ---
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      toggleMute() {
+        this.muted = !this.muted;
+        return this.muted;
+      }
+      playClick() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const now = this.ctx.currentTime;
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320 + Math.random() * 80, now);
+        osc.frequency.exponentialRampToValueAtTime(110, now + 0.04);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.045);
+      }
+      playCoin(pitchMultiplier = 1) {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        const baseFreq = 987.77 * Math.min(2.5, pitchMultiplier);
+        osc.frequency.setValueAtTime(baseFreq, now);
+        osc.frequency.setValueAtTime(baseFreq * 1.334, now + 0.08); // B5 to E6 jump
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.setValueAtTime(0.18, now + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.33);
+      }
+      playJackpot(level = 1) {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const chord = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C Major
+        chord.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const startTime = now + (idx * 0.04);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq * (1 + (level * 0.08)), startTime);
+          gain.gain.setValueAtTime(0.12, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.22);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(startTime);
+          osc.stop(startTime + 0.23);
+        });
+      }
+      playDefuse() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.16);
+      }
+      playCatastrophe() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Low distorted buzzer
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.linearRampToValueAtTime(45, now + 0.65);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.75);
+
+        // Noise blast
+        const bufferSize = this.ctx.sampleRate * 0.4;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.3, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        noise.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+        noise.start(now);
+        noise.stop(now + 0.42);
+      }
+    }
+
+    // --- Massively Expanded Tsoding Tasks Database ---
+    const SAFE_TASKS = [
+      // Dynamic Arrays (The Legendary Macro)
+      "da_append(&da, item); // dynamic array macro recreation #42",
+      "da.items[da.count++] = item; if (da.count >= da.capacity) da_reserve(&da);",
+      "#define DA_INIT_CAPACITY 256 // std::vector is bloat",
+      "Re-implement da_append() macro from memory in 12 lines of C",
+      "Free dynamic array items manually because RAII is for cowards",
+      "da_reserve(&da, new_capacity * 2); // manual memory growth",
+      "Write type-safe dynamic array macro using typeof() GCC extension",
+      "Refactor dynamic array into single header nob_da.h",
+
+      // Semicolon Sagas
+      "Debug missing semicolon in GCC template vomit for 3 hours",
+      "Stare at line 142 wondering where the semicolon went",
+      "Add semicolon after struct declaration: struct Tsoding { int hair; };",
+      "Compiler error: expected ';' before '}' token in main.c",
+      "Accidentally put semicolon after #define and broke entire AST",
+      "Search entire codebase for misplaced semicolon inside macro",
+      "Spend 45 minutes debugging why 'if (condition); { do_thing(); }' ran anyway",
+
+      // nob.h & Build Systems
+      "nob_cmd_run_sync(&cmd); // Build everything with pure C",
+      "nob_shift_args(&argc, &argv); // Command line parser",
+      "Replace 800-line CMakeLists.txt with 35 lines of pure nob.c",
+      "nob_cmd_append(&cmd, \"cc\", \"-Wall\", \"-Wextra\", \"-pedantic\", \"-Werror\");",
+      "Compile nob.c with gcc -o nob nob.c (No make, no ninja, just C)",
+      "Header-only library madness: #define NOB_IMPLEMENTATION",
+      "nob_mkdir_if_not_exists(\"build/\");",
+      "Write custom build system for building the build system",
+
+      // Memory & Allocators
+      "Arena alloc 128MB (we let OS exit() free everything)",
+      "Implement custom bump arena allocator in 40 lines of C",
+      "Valgrind report: 0 errors from 0 contexts (BLYAT YES!)",
+      "Stack-allocate 2MB buffer with alloca() and pray to kernel",
+      "Implement ring buffer with zero external dependencies",
+      "Pointer arithmetic: *(char**)((char*)ptr + offset) = payload;",
+      "Memory leak? The process terminates anyway, who cares!",
+
+      // Low-Level Wizardry & Compilers
+      "Write custom Forth interpreter from scratch in C99",
+      "Inspect generated x86_64 assembly output with objdump -M intel",
+      "Reinvent string slice struct { const char *data; size_t count; }",
+      "Compile with -nostdlib and invoke Linux syscalls directly",
+      "Render bouncing textured cube in terminal using raylib",
+      "Implement custom bytecode virtual machine with 16 opcodes",
+      "Parse ELF executable headers by hand using mmap()",
+      "Write custom Bresenham line rasterizer in pure C",
+      "Bitwise shift wizardry: (x << 3) - x instead of x * 7",
+      "Explain why NULL is not always bitwise 0x0 on obscure architectures",
+      "Implement hash table with linear probing in 60 lines",
+      "Use stb_image.h because package managers are the true enemy",
+      "Stream for 9 hours writing an x86 assembler in C from scratch",
+      "Holy C tribute: 640x480 with 16 colors is peak computing",
+      "Write custom regex engine using deterministic finite automaton",
+      "Format code with custom vim macro because clang-format is annoying",
+
+      // Haskell & Functional Sarcasm
+      "Explain why monads are just monoids in endofunctor category",
+      "Write a quick Haskell one-liner that solves the entire problem",
+      "foldr (.) id [pure_c, no_dependencies, raw_performance]",
+      "Pattern match on Maybe (Just (HUID_Collision))",
+      "Curry functions until readability drops to zero",
+
+      // Editor, Terminal & Emacs
+      "Configure Emacs evil-mode keybindings for the 900th time",
+      "Escape from Vim with :wq! and wipe forehead",
+      "Write custom Emacs Lisp mode for real-time HUID validation",
+      "GDB attach to PID and print stack trace while sweating",
+      "Watch GCC output with -O3 flag and marvel at SIMD vectorization"
+    ];
+
+    const TRAP_TASKS = [
+      // Dangerous / Absurd Traps (MUST PRESS NO)
+      "Rewrite entire codebase in Java Spring Boot? [y/N]",
+      "rm -rf / --no-preserve-root [y/N]",
+      "Switch build system to CMake 3.28 with 45 external dependencies? [y/N]",
+      "Migrate terminal to Electron + React + Redux + Webpack? [y/N]",
+      "Install 4,200 npm packages for left-pad and is-odd? [y/N]",
+      "Enable Garbage Collector and forbid raw pointer arithmetic? [y/N]",
+      "Switch editor from Emacs/Vim to VS Code with 90 extensions? [y/N]",
+      "Rewrite in Python because 'C is too hard and unsafe'? [y/N]",
+      "Add C++ template metaprogramming hierarchy with virtual inheritance? [y/N]",
+      "Deploy single CLI tool as microservices on a Kubernetes cluster? [y/N]",
+      "Add Agile Jira story points and mandatory 8:00 AM daily standup? [y/N]",
+      "Use AI assistant to rewrite nob.h into a Maven POM XML? [y/N]",
+      "Include <windows.h> and call MessageBoxA() in pure Linux terminal? [y/N]",
+      "Switch to Rust and fight borrow checker for 6 consecutive hours? [y/N]",
+      "Use std::shared_ptr<std::vector<std::any>> instead of dynamic array? [y/N]",
+      "Add blockchain web3 NFT token authentication to each HUID? [y/N]",
+      "Import Boost C++ libraries (downloading 4.2 GB of header files)? [y/N]",
+      "Convert all C structs into AbstractSingletonProxyFactoryBean? [y/N]",
+      "Disable -Wall and suppress all compiler warnings with -w? [y/N]",
+      "Use MongoDB because 'schemaless JSON is web scale'? [y/N]",
+      "Run git push --force origin main on corporate production branch? [y/N]",
+      "Rewrite custom Forth VM into SOAP XML Enterprise Service Bus? [y/N]",
+      "Replace terminal with 120 FPS Three.js metaverse portal? [y/N]",
+      "Accept 500-comment GitHub PR renaming 'i' to 'temporaryLoopCounter'? [y/N]",
+      "Replace Linux kernel syscalls with Node.js child_process.exec()? [y/N]",
+      "Install Docker Desktop with 8GB RAM footprint for a hello world? [y/N]",
+      "Rewrite dynamic array using Java ArrayList<Object> factory pattern? [y/N]"
+    ];
+
+    // --- Particle System (Mario Coins, Sparks, Text Popups) ---
+    class Particle {
+      constructor(x, y, type, text = '', color = '#33ff33') {
+        this.x = x;
+        this.y = y;
+        this.type = type; // 'coin', 'text', 'spark', 'splat'
+        this.text = text;
+        this.color = color;
+        this.alpha = 1.0;
+        this.scale = 1.0;
+        this.life = 0;
+
+        if (type === 'coin') {
+          this.vx = (Math.random() - 0.5) * 4;
+          this.vy = -7 - Math.random() * 4; // Mario jump arc
+          this.gravity = 0.35;
+          this.spinAngle = 0;
+          this.spinSpeed = 0.25;
+          this.maxLife = 55;
+        } else if (type === 'text') {
+          this.vx = (Math.random() - 0.5) * 1.5;
+          this.vy = -2.2 - Math.random() * 1.5;
+          this.gravity = 0;
+          this.maxLife = 60;
+        } else if (type === 'spark') {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 2 + Math.random() * 5;
+          this.vx = Math.cos(angle) * speed;
+          this.vy = Math.sin(angle) * speed;
+          this.gravity = 0.15;
+          this.maxLife = 35;
+        } else if (type === 'splat') {
+          this.vx = (Math.random() - 0.5) * 3;
+          this.vy = -1 - Math.random() * 3;
+          this.gravity = 0.2;
+          this.maxLife = 25;
+        }
+      }
+      update() {
+        this.life++;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += this.gravity;
+        if (this.type === 'coin') {
+          this.spinAngle += this.spinSpeed;
+        }
+        this.alpha = Math.max(0, 1 - (this.life / this.maxLife));
+        return this.life < this.maxLife;
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.alpha);
+        if (this.type === 'coin') {
+          // Mario-style golden coin
+          const width = Math.abs(Math.cos(this.spinAngle)) * 14 + 3;
+          ctx.translate(this.x, this.y);
+          // Coin outer rim
+          ctx.fillStyle = '#ffcc00';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, width / 2, 10, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // Coin inner groove
+          ctx.fillStyle = '#ffe066';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, Math.max(1, width / 2 - 2), 7, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // Embossed diamond/line
+          ctx.fillStyle = '#cc9900';
+          ctx.fillRect(-1, -4, 2, 8);
+        } else if (this.type === 'text') {
+          ctx.font = 'bold 15px "Courier New", monospace';
+          ctx.fillStyle = this.color;
+          ctx.shadowColor = this.color;
+          ctx.shadowBlur = 8;
+          ctx.fillText(this.text, this.x, this.y);
+        } else if (this.type === 'spark' || this.type === 'splat') {
+          ctx.fillStyle = this.color;
+          ctx.fillRect(this.x, this.y, 3, 3);
+        }
+        ctx.restore();
+      }
+    }
+
+    // --- Lemmings Physics System (Pixel Coders Walking on Code Lines) ---
+    class Lemming {
+      constructor(canvasWidth, platforms) {
+        this.platforms = platforms;
+        this.reset(canvasWidth);
+      }
+      reset(canvasWidth) {
+        this.x = Math.random() * (canvasWidth - 100) + 50;
+        this.y = 80;
+        this.vx = (Math.random() > 0.5 ? 1 : -1) * (0.8 + Math.random() * 0.7);
+        this.vy = 0;
+        this.width = 10;
+        this.height = 14;
+        this.onGround = false;
+        this.falling = true;
+        this.state = 'walk'; // 'walk', 'fall', 'splat'
+        this.animFrame = 0;
+        this.shirtColor = ['#33ff33', '#00e5ff', '#ffb300', '#ff0055'][Math.floor(Math.random() * 4)];
+      }
+      update(canvasWidth, canvasHeight, screenShake) {
+        this.animFrame++;
+
+        // If high screen shake, lemmings stumble and fall off!
+        if (screenShake > 4 && this.onGround && Math.random() < 0.25) {
+          this.onGround = false;
+          this.falling = true;
+          this.vy = -2 - Math.random() * 3;
+          this.vx = (Math.random() - 0.5) * 4;
+        }
+
+        if (!this.onGround) {
+          this.vy += 0.25; // gravity
+          this.x += this.vx;
+          this.y += this.vy;
+
+          // Check landing on platforms (horizontal CLI lines & prompt edges)
+          for (const plat of this.platforms) {
+            if (this.vy > 0 &&
+                this.x + this.width > plat.x1 &&
+                this.x < plat.x2 &&
+                this.y + this.height >= plat.y &&
+                this.y + this.height <= plat.y + 12) {
+              this.y = plat.y - this.height;
+              this.vy = 0;
+              this.onGround = true;
+              this.falling = false;
+              break;
+            }
+          }
+        } else {
+          // Walking along platform
+          this.x += this.vx;
+          // Check if walked off current platform ledge
+          let supported = false;
+          for (const plat of this.platforms) {
+            if (this.x + this.width > plat.x1 &&
+                this.x < plat.x2 &&
+                Math.abs(this.y + this.height - plat.y) <= 4) {
+              supported = true;
+              break;
+            }
+          }
+          if (!supported) {
+            this.onGround = false;
+            this.falling = true;
+          }
+          // Turn around at canvas screen boundaries
+          if (this.x < 15) { this.x = 15; this.vx = Math.abs(this.vx); }
+          if (this.x > canvasWidth - 25) { this.x = canvasWidth - 25; this.vx = -Math.abs(this.vx); }
+        }
+
+        // Reached bottom floor
+        if (this.y > canvasHeight - 20) {
+          return false; // trigger splat & respawn
+        }
+        return true;
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Little green/cyan pixel coder with blue hair & bag
+        // Green hair
+        ctx.fillStyle = '#00ff66';
+        ctx.fillRect(2, 0, 6, 3);
+        // Face
+        ctx.fillStyle = '#ffe0b2';
+        ctx.fillRect(3, 3, 5, 4);
+        // Eyes
+        ctx.fillStyle = '#111';
+        const eyeOffset = this.vx > 0 ? 5 : 3;
+        ctx.fillRect(eyeOffset, 4, 2, 2);
+        // Shirt
+        ctx.fillStyle = this.shirtColor;
+        ctx.fillRect(2, 7, 6, 4);
+        // Legs (animated walking or flailing when falling)
+        ctx.fillStyle = '#3f51b5';
+        if (this.onGround) {
+          const legPhase = Math.sin(this.animFrame * 0.4);
+          ctx.fillRect(2, 11, 2, 3 + legPhase);
+          ctx.fillRect(6, 11, 2, 3 - legPhase);
+        } else {
+          // Flailing legs in air
+          const flail = (this.animFrame % 4 < 2) ? 1 : -1;
+          ctx.fillRect(1, 11 + flail, 3, 3);
+          ctx.fillRect(6, 11 - flail, 3, 3);
+        }
+        ctx.restore();
+      }
+    }
+
+    // --- Procedural Tsoding Avatar Renderer ---
+    class TsodingAvatar {
+      constructor() {
+        this.state = 'idle'; // 'idle', 'smug', 'shout', 'flame', 'crying'
+        this.frame = 0;
+        this.speechBubble = '';
+        this.bubbleTimer = 0;
+      }
+      setState(state, quote = '', duration = 80) {
+        this.state = state;
+        if (quote) {
+          this.speechBubble = quote;
+          this.bubbleTimer = duration;
+        }
+      }
+      update() {
+        this.frame++;
+        if (this.bubbleTimer > 0) {
+          this.bubbleTimer--;
+          if (this.bubbleTimer === 0) {
+            this.speechBubble = '';
+            if (this.state !== 'flame') this.state = 'idle';
+          }
+        }
+      }
+      draw(ctx, x, y, scale = 3.5) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        this.update();
+
+        // 18x18 Pixel grid for Tsoding Face & Hair
+        const px = scale;
+
+        // Super Saiyan Fire Aura if flame state
+        if (this.state === 'flame') {
+          ctx.fillStyle = 'rgba(255, 200, 0, 0.4)';
+          const flameOffset = Math.sin(this.frame * 0.3) * 3;
+          ctx.beginPath();
+          ctx.arc(9 * px, 9 * px, 13 * px + flameOffset, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Long Dark Hair & Beard Frame (Dark Brown/Black)
+        ctx.fillStyle = (this.state === 'flame') ? '#ffaa00' : '#1f1610';
+        // Top hair
+        ctx.fillRect(3 * px, 0 * px, 12 * px, 4 * px);
+        // Left hair lock
+        ctx.fillRect(1 * px, 2 * px, 3 * px, 14 * px);
+        // Right hair lock
+        ctx.fillRect(14 * px, 2 * px, 3 * px, 14 * px);
+        // Beard / Chin
+        ctx.fillRect(4 * px, 13 * px, 10 * px, 5 * px);
+        ctx.fillRect(5 * px, 18 * px, 8 * px, 2 * px);
+
+        // Face Skin Tone
+        ctx.fillStyle = (this.state === 'crying') ? '#b0c4de' : '#f5cba7';
+        ctx.fillRect(4 * px, 4 * px, 10 * px, 9 * px);
+
+        // Glasses (Black Frames)
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(4 * px, 6 * px, 4 * px, 1 * px);
+        ctx.fillRect(10 * px, 6 * px, 4 * px, 1 * px);
+        ctx.fillRect(4 * px, 9 * px, 4 * px, 1 * px);
+        ctx.fillRect(10 * px, 9 * px, 4 * px, 1 * px);
+        ctx.fillRect(4 * px, 7 * px, 1 * px, 2 * px);
+        ctx.fillRect(7 * px, 7 * px, 1 * px, 2 * px);
+        ctx.fillRect(10 * px, 7 * px, 1 * px, 2 * px);
+        ctx.fillRect(13 * px, 7 * px, 1 * px, 2 * px);
+        ctx.fillRect(8 * px, 7 * px, 2 * px, 1 * px); // bridge
+
+        // Glass Glare / Eyes
+        if (this.state === 'crying') {
+          // Closed crying eyes
+          ctx.fillStyle = '#4477aa';
+          ctx.fillRect(5 * px, 7 * px, 2 * px, 2 * px);
+          ctx.fillRect(11 * px, 7 * px, 2 * px, 2 * px);
+          // Tears
+          ctx.fillStyle = '#00e5ff';
+          ctx.fillRect(5 * px, 10 * px, 2 * px, 4 * px + (this.frame % 3));
+          ctx.fillRect(11 * px, 10 * px, 2 * px, 4 * px + ((this.frame + 1) % 3));
+        } else if (this.state === 'flame') {
+          // Glowing yellow/red eyes of pure collision power
+          ctx.fillStyle = '#ff2200';
+          ctx.fillRect(5 * px, 7 * px, 2 * px, 2 * px);
+          ctx.fillRect(11 * px, 7 * px, 2 * px, 2 * px);
+        } else {
+          // Normal/Smug eyes
+          ctx.fillStyle = '#2b1b17';
+          ctx.fillRect(5 * px, 7 * px, 2 * px, 2 * px);
+          ctx.fillRect(11 * px, 7 * px, 2 * px, 2 * px);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(5 * px, 7 * px, 1 * px, 1 * px);
+          ctx.fillRect(11 * px, 7 * px, 1 * px, 1 * px);
+        }
+
+        // Mustache & Mouth
+        ctx.fillStyle = (this.state === 'flame') ? '#ffaa00' : '#1f1610';
+        ctx.fillRect(6 * px, 11 * px, 6 * px, 2 * px); // mustache
+
+        if (this.state === 'shout' || this.state === 'flame') {
+          // Open screaming mouth ("BLYAT!")
+          ctx.fillStyle = '#800000';
+          ctx.fillRect(7 * px, 13 * px, 4 * px, 3 * px);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(8 * px, 13 * px, 2 * px, 1 * px); // teeth
+        } else if (this.state === 'smug') {
+          // Smug grin
+          ctx.fillStyle = '#1f1610';
+          ctx.fillRect(8 * px, 13 * px, 3 * px, 1 * px);
+          ctx.fillRect(11 * px, 12 * px, 1 * px, 1 * px);
+        } else {
+          // Straight neutral coder line
+          ctx.fillStyle = '#1f1610';
+          ctx.fillRect(7 * px, 13 * px, 4 * px, 1 * px);
+        }
+
+        // Speech Bubble if shouting/talking
+        if (this.speechBubble) {
+          ctx.save();
+          ctx.font = 'bold 12px "Courier New", monospace';
+          const textWidth = ctx.measureText(this.speechBubble).width;
+          const bubbleX = 18 * px + 8;
+          const bubbleY = 2 * px;
+          ctx.fillStyle = '#051805';
+          ctx.strokeStyle = '#33ff33';
+          ctx.lineWidth = 1.5;
+          ctx.fillRect(bubbleX, bubbleY - 14, textWidth + 14, 26);
+          ctx.strokeRect(bubbleX, bubbleY - 14, textWidth + 14, 26);
+          // Little speech arrow
+          ctx.fillStyle = '#33ff33';
+          ctx.beginPath();
+          ctx.moveTo(bubbleX, bubbleY);
+          ctx.lineTo(bubbleX - 6, bubbleY - 4);
+          ctx.lineTo(bubbleX, bubbleY - 8);
+          ctx.fill();
+
+          ctx.fillStyle = (this.state === 'crying') ? '#ff3333' : '#33ff33';
+          ctx.fillText(this.speechBubble, bubbleX + 7, bubbleY + 4);
+          ctx.restore();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    // --- Main Game Engine ---
+    class HuidGame {
+      constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.sound = new SoundEngine();
+
+        this.width = 960;
+        this.height = 640;
+
+        // Game State Variables
+        this.score = 0;
+        this.highScore = parseInt(localStorage.getItem('huid_high_score') || '0', 10);
+        this.collisionsThisSec = 0;
+        this.lastSecondTracked = -1;
+        this.currentHuidStr = '';
+        this.activeSecondMs = 0;
+
+        // Velocity & Multiplier
+        this.pointVelocity = 1.0;
+        this.multiplier = 1.0;
+        this.consecutiveCollisionSecs = 0;
+        this.totalCollisions = 0;
+        this.peakCollisionsPerSec = 0;
+
+        // Prompts & Traps
+        this.promptIndex = 0;
+        this.currentPrompt = null;
+        this.isTrap = false;
+        this.terminalLogs = [];
+        this.maxLogs = 8;
+
+        // Game Visual FX
+        this.screenShake = 0;
+        this.flashRed = 0;
+        this.particles = [];
+        this.avatar = new TsodingAvatar();
+
+        // Lemmings Platforms
+        this.platforms = [];
+        this.lemmings = [];
+
+        // Interactive Canvas Buttons (for mouse & touch)
+        this.buttons = [];
+
+        // Modals & Tabs
+        this.viewMode = 'game'; // 'game', 'hall_of_fame'
+        this.scoresList = JSON.parse(localStorage.getItem('huid_leaderboard') || '[]');
+
+        this.initCanvasSize();
+        this.setupEventListeners();
+        this.setupPlatforms();
+        this.setupLemmings(6);
+        this.nextPrompt();
+
+        this.lastFrameTime = performance.now();
+        requestAnimationFrame((t) => this.loop(t));
+      }
+
+      initCanvasSize() {
+        const resize = () => {
+          const container = document.getElementById('game-container');
+          const maxW = container.clientWidth - 20;
+          const maxH = container.clientHeight - 20;
+
+          const aspect = 960 / 640;
+          let w = maxW;
+          let h = w / aspect;
+          if (h > maxH) {
+            h = maxH;
+            w = h * aspect;
+          }
+
+          this.canvas.style.width = `${Math.floor(w)}px`;
+          this.canvas.style.height = `${Math.floor(h)}px`;
+
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          this.canvas.width = Math.floor(960 * dpr);
+          this.canvas.height = Math.floor(640 * dpr);
+          this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          this.scaleX = 960 / w;
+          this.scaleY = 640 / h;
+
+          this.setupPlatforms();
+          this.setupButtons();
+        };
+        window.addEventListener('resize', resize);
+        resize();
+      }
+
+      setupPlatforms() {
+        // Physical edges in the terminal for Lemmings to walk on
+        this.platforms = [
+          { x1: 30, x2: 930, y: 70 },   // Top header bar
+          { x1: 30, x2: 660, y: 310 },  // Prompt box top ledge
+          { x1: 30, x2: 660, y: 440 },  // Prompt box bottom ledge
+          { x1: 670, x2: 930, y: 310 }, // Avatar box bottom
+          { x1: 30, x2: 930, y: 550 }   // Action console shelf
+        ];
+      }
+
+      setupLemmings(count = 6) {
+        this.lemmings = [];
+        for (let i = 0; i < count; i++) {
+          this.lemmings.push(new Lemming(960, this.platforms));
+        }
+      }
+
+      setupButtons() {
+        // On-screen clickable buttons
+        this.buttons = [
+          { id: 'btn_yes', text: '[ Y: APPROVE & COLLIDE ]', x: 40, y: 565, w: 260, h: 50, color: '#33ff33', bg: '#082008' },
+          { id: 'btn_no',  text: '[ N: REJECT TRAP ]',      x: 320, y: 565, w: 220, h: 50, color: '#ff4444', bg: '#250808' },
+          { id: 'btn_hof', text: '[ H: TOP 10 ]',           x: 560, y: 565, w: 170, h: 50, color: '#00e5ff', bg: '#081820' },
+          { id: 'btn_mute',text: '[ M: AUDIO ]',            x: 750, y: 565, w: 170, h: 50, color: '#ffb300', bg: '#201808' }
+        ];
+      }
+
+      formatHUID(date) {
+        const Y = date.getFullYear();
+        const M = String(date.getMonth() + 1).padStart(2, '0');
+        const D = String(date.getDate()).padStart(2, '0');
+        const h = String(date.getHours()).padStart(2, '0');
+        const m = String(date.getMinutes()).padStart(2, '0');
+        const s = String(date.getSeconds()).padStart(2, '0');
+        return `HUID_${Y}${M}${D}_${h}${m}${s}`;
+      }
+
+      nextPrompt() {
+        // 22% chance of trap task
+        this.isTrap = Math.random() < 0.22;
+        if (this.isTrap) {
+          const trapText = TRAP_TASKS[Math.floor(Math.random() * TRAP_TASKS.length)];
+          this.currentPrompt = { text: trapText, trap: true };
+          if (Math.random() < 0.4) {
+            this.avatar.setState('idle', 'Wait a second... smell that?');
+          }
+        } else {
+          const safeText = SAFE_TASKS[Math.floor(Math.random() * SAFE_TASKS.length)];
+          this.currentPrompt = { text: safeText, trap: false };
+        }
+        this.promptIndex++;
+      }
+
+      addLog(text, color = '#33ff33') {
+        this.terminalLogs.push({ text, color, time: Date.now() });
+        if (this.terminalLogs.length > this.maxLogs) {
+          this.terminalLogs.shift();
+        }
+      }
+
+      spawnCoins(count = 3, originX = 350, originY = 360) {
+        for (let i = 0; i < count; i++) {
+          this.particles.push(new Particle(originX, originY, 'coin'));
+        }
+      }
+
+      spawnText(text, x, y, color = '#ffff00') {
+        this.particles.push(new Particle(x, y, 'text', text, color));
+      }
+
+      spawnSparks(count = 15, x = 350, y = 360, color = '#33ff33') {
+        for (let i = 0; i < count; i++) {
+          this.particles.push(new Particle(x, y, 'spark', '', color));
+        }
+      }
+
+      triggerCatastrophicReset() {
+        this.sound.playCatastrophe();
+        this.flashRed = 30;
+        this.screenShake = 22;
+
+        const lostScore = this.score;
+        this.score = 0;
+        this.multiplier = 1.0;
+        this.pointVelocity = 1.0;
+        this.consecutiveCollisionSecs = 0;
+
+        this.avatar.setState('crying', 'BLYAT! WHO APPROVED THIS?!', 140);
+        this.spawnText(`SCORE WIPED! (-${lostScore})`, 280, 360, '#ff2222');
+        this.addLog(`[CATASTROPHE] You accepted forbidden trap: "${this.currentPrompt.text}"`, '#ff3333');
+        this.addLog(`[RESET] Score reset to 0! Absolute blyat moment.`, '#ff5555');
+
+        this.nextPrompt();
+      }
+
+      handleYesAction() {
+        if (this.viewMode === 'hall_of_fame') {
+          this.viewMode = 'game';
+          return;
+        }
+
+        const now = new Date();
+        const currentSec = now.getSeconds();
+
+        // TRAP CHECK: Pressed Yes on a trap? INSTANT SCORE ZERO!
+        if (this.currentPrompt && this.currentPrompt.trap) {
+          this.triggerCatastrophicReset();
+          return;
+        }
+
+        // Check if inside same second
+        if (currentSec === this.lastSecondTracked) {
+          // COLLISION OCCURRED!
+          this.collisionsThisSec++;
+          this.totalCollisions++;
+
+          if (this.collisionsThisSec > this.peakCollisionsPerSec) {
+            this.peakCollisionsPerSec = this.collisionsThisSec;
+          }
+
+          // Points scale exponentially with collision count in this second
+          const collisionBasePoints = 50 * Math.pow(1.8, Math.min(this.collisionsThisSec - 1, 6));
+          const earned = Math.round(collisionBasePoints * this.multiplier);
+          this.score += earned;
+
+          // Velocity Boost
+          this.pointVelocity = Math.min(25.0, this.pointVelocity + 0.65);
+
+          // Audio & Visual Juice
+          const pitch = 1 + (this.collisionsThisSec * 0.15);
+          this.sound.playCoin(pitch);
+          if (this.collisionsThisSec >= 4) {
+            this.sound.playJackpot(Math.min(5, this.collisionsThisSec));
+          }
+
+          this.screenShake = Math.min(18, 3 + this.collisionsThisSec * 1.5);
+          this.spawnCoins(Math.min(6, 1 + Math.floor(this.collisionsThisSec / 2)), 360, 370);
+          this.spawnSparks(10, 360, 370, '#33ff33');
+          this.spawnText(`COLLISION #${this.collisionsThisSec}! +${earned}`, 320, 340, '#ffff00');
+
+          // Avatar reactions
+          if (this.collisionsThisSec === 2) {
+            this.avatar.setState('smug', 'Collision detected!');
+          } else if (this.collisionsThisSec === 4) {
+            this.avatar.setState('shout', 'BLYAT! KEEP MASHING!');
+          } else if (this.collisionsThisSec >= 7) {
+            this.avatar.setState('flame', 'MAXIMUM OVERCLOCK!');
+          }
+
+          this.addLog(`[COLLISION #${this.collisionsThisSec}] ${this.currentHuidStr} (+${earned} pts)`, '#ffea00');
+        } else {
+          // First approval in new second
+          this.lastSecondTracked = currentSec;
+          this.collisionsThisSec = 1;
+
+          const earned = Math.round(15 * this.multiplier);
+          this.score += earned;
+          this.sound.playClick();
+          this.spawnSparks(4, 360, 370, '#00e5ff');
+          this.spawnText(`CREATED +${earned}`, 340, 350, '#33ff33');
+
+          this.addLog(`[TASK CREATED] ${this.currentHuidStr} (+${earned} pts)`, '#33ff33');
+        }
+
+        if (this.score > this.highScore) {
+          this.highScore = this.score;
+          localStorage.setItem('huid_high_score', String(this.highScore));
+        }
+
+        this.nextPrompt();
+      }
+
+      handleNoAction() {
+        if (this.viewMode === 'hall_of_fame') {
+          this.viewMode = 'game';
+          return;
+        }
+
+        if (this.currentPrompt && this.currentPrompt.trap) {
+          // Successfully defused trap!
+          const bonus = Math.round(250 * this.multiplier);
+          this.score += bonus;
+          this.sound.playDefuse();
+          this.sound.playJackpot(2);
+          this.spawnSparks(16, 360, 370, '#00e5ff');
+          this.spawnText(`TRAP DEFUSED! +${bonus}`, 320, 340, '#00e5ff');
+          this.avatar.setState('smug', 'Nice catch! No CMake here.');
+          this.addLog(`[DEFUSED] Rejected trap: "${this.currentPrompt.text}" (+${bonus} pts)`, '#00e5ff');
+        } else {
+          // Skipped normal task
+          this.sound.playClick();
+          this.addLog(`[SKIPPED] "${this.currentPrompt.text.slice(0, 32)}..."`, '#888888');
+        }
+
+        this.nextPrompt();
+      }
+
+      saveScoreToLeaderboard() {
+        if (this.score <= 0) return;
+        const entry = {
+          score: this.score,
+          collisions: this.totalCollisions,
+          peakRate: this.peakCollisionsPerSec,
+          multiplier: this.multiplier.toFixed(1),
+          date: new Date().toISOString().replace('T', ' ').slice(0, 19)
+        };
+        this.scoresList.push(entry);
+        this.scoresList.sort((a, b) => b.score - a.score);
+        this.scoresList = this.scoresList.slice(0, 10);
+        localStorage.setItem('huid_leaderboard', JSON.stringify(this.scoresList));
+      }
+
+      toggleHallOfFame() {
+        this.viewMode = (this.viewMode === 'game') ? 'hall_of_fame' : 'game';
+        if (this.viewMode === 'hall_of_fame') {
+          this.saveScoreToLeaderboard();
+        }
+      }
+
+      copyBragToClipboard() {
+        const text = `🏆 I scored ${this.score.toLocaleString()} points with ${this.peakCollisionsPerSec} collisions/sec in HUID BLYAT! Can you beat my Tsoding collider?`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text);
+          this.spawnText('COPIED TO CLIPBOARD!', 400, 320, '#00e5ff');
+        }
+      }
+
+      setupEventListeners() {
+        window.addEventListener('keydown', (e) => {
+          this.sound.init();
+
+          if (e.key === 'y' || e.key === 'Y' || e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            this.handleYesAction();
+          } else if (e.key === 'n' || e.key === 'N' || e.key === 'Backspace' || e.key === 'Escape') {
+            e.preventDefault();
+            this.handleNoAction();
+          } else if (e.key === 'm' || e.key === 'M') {
+            this.sound.toggleMute();
+          } else if (e.key === 'h' || e.key === 'H' || e.key === 'Tab') {
+            e.preventDefault();
+            this.toggleHallOfFame();
+          } else if (e.key === 'c' || e.key === 'C') {
+            this.copyBragToClipboard();
+          }
+        });
+
+        const handlePointer = (clientX, clientY) => {
+          this.sound.init();
+          const rect = this.canvas.getBoundingClientRect();
+          const scaleX = 960 / rect.width;
+          const scaleY = 640 / rect.height;
+          const x = (clientX - rect.left) * scaleX;
+          const y = (clientY - rect.top) * scaleY;
+
+          // Check interactive buttons
+          for (const btn of this.buttons) {
+            if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+              if (btn.id === 'btn_yes') this.handleYesAction();
+              else if (btn.id === 'btn_no') this.handleNoAction();
+              else if (btn.id === 'btn_hof') this.toggleHallOfFame();
+              else if (btn.id === 'btn_mute') this.sound.toggleMute();
+              return;
+            }
+          }
+
+          // If in Hall of Fame, tapping center closes it
+          if (this.viewMode === 'hall_of_fame') {
+            if (y > 480) {
+              this.copyBragToClipboard();
+            } else {
+              this.viewMode = 'game';
+            }
+            return;
+          }
+
+          // Tapping anywhere on canvas also defaults to Yes mash for speed
+          if (y < 550) {
+            this.handleYesAction();
+          }
+        };
+
+        this.canvas.addEventListener('mousedown', (e) => handlePointer(e.clientX, e.clientY));
+        this.canvas.addEventListener('touchstart', (e) => {
+          if (e.touches.length > 0) {
+            handlePointer(e.touches[0].clientX, e.touches[0].clientY);
+          }
+        }, { passive: true });
+      }
+
+      update(dt) {
+        const now = new Date();
+        this.currentHuidStr = this.formatHUID(now);
+        this.activeSecondMs = now.getMilliseconds();
+
+        // Check if second changed: evaluate consecutive seconds chain
+        const currentSec = now.getSeconds();
+        if (this.lastSecondTracked !== -1 && currentSec !== this.lastSecondTracked) {
+          if (this.collisionsThisSec >= 2) {
+            this.consecutiveCollisionSecs++;
+            // Boost multiplier
+            this.multiplier = Math.min(10.0, 1.0 + (this.consecutiveCollisionSecs * 0.45));
+          } else {
+            // Decay consecutive chain if mash slowed down
+            this.consecutiveCollisionSecs = Math.max(0, this.consecutiveCollisionSecs - 1);
+            this.multiplier = Math.max(1.0, this.multiplier - 0.25);
+          }
+          this.collisionsThisSec = 0;
+          this.lastSecondTracked = currentSec;
+        }
+
+        // Velocity Decay over time
+        this.pointVelocity = Math.max(1.0, this.pointVelocity - (dt * 0.8));
+
+        // Screen Shake decay
+        if (this.screenShake > 0) {
+          this.screenShake *= 0.88;
+          if (this.screenShake < 0.2) this.screenShake = 0;
+        }
+
+        // Red flash decay
+        if (this.flashRed > 0) this.flashRed--;
+
+        // Update Lemmings
+        for (const lem of this.lemmings) {
+          const alive = lem.update(960, 640, this.screenShake);
+          if (!alive) {
+            // Splat into green dust particles & respawn
+            this.spawnSparks(8, lem.x, 630, '#00ff66');
+            lem.reset(960);
+          }
+        }
+
+        // Update Particles
+        this.particles = this.particles.filter((p) => {
+          p.update();
+          return p.alpha > 0;
+        });
+      }
+
+      draw() {
+        const ctx = this.ctx;
+        ctx.save();
+
+        // Apply Screen Shake
+        if (this.screenShake > 0) {
+          const shakeX = (Math.random() - 0.5) * this.screenShake * 2;
+          const shakeY = (Math.random() - 0.5) * this.screenShake * 2;
+          ctx.translate(shakeX, shakeY);
+        }
+
+        // Background
+        ctx.fillStyle = this.flashRed > 0 ? '#300505' : '#040b04';
+        ctx.fillRect(0, 0, 960, 640);
+
+        // Terminal CRT Grid Line Accent
+        ctx.strokeStyle = 'rgba(20, 80, 20, 0.25)';
+        ctx.lineWidth = 1;
+        for (let y = 0; y < 640; y += 32) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(960, y);
+          ctx.stroke();
+        }
+
+        // Top Header
+        this.drawHeader(ctx);
+
+        if (this.viewMode === 'game') {
+          // Main Terminal Content
+          this.drawPromptBox(ctx);
+          this.drawTelemetry(ctx);
+          this.drawLogs(ctx);
+          this.drawLemmings(ctx);
+          this.drawParticles(ctx);
+          this.drawButtons(ctx);
+        } else {
+          // Hall of Fame Screen
+          this.drawHallOfFame(ctx);
+        }
+
+        // CRT Scanline Overlay Effect
+        this.drawScanlines(ctx);
+
+        ctx.restore();
+      }
+
+      drawHeader(ctx) {
+        // Outer Border
+        ctx.strokeStyle = '#22cc44';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(20, 15, 920, 610);
+
+        // Title Bar
+        ctx.fillStyle = '#081c08';
+        ctx.fillRect(22, 17, 916, 45);
+        ctx.strokeStyle = '#1d8830';
+        ctx.strokeRect(22, 17, 916, 45);
+
+        ctx.font = 'bold 18px "Courier New", monospace';
+        ctx.fillStyle = '#33ff33';
+        ctx.shadowColor = '#33ff33';
+        ctx.shadowBlur = 6;
+        ctx.fillText('HUID BLYAT! // TSODING HYPER-COLLIDER v1.0.0', 40, 45);
+
+        // Top Clock & HUID Ticker
+        ctx.font = 'bold 16px "Courier New", monospace';
+        ctx.fillStyle = '#ffea00';
+        ctx.shadowColor = '#ffea00';
+        ctx.shadowBlur = 5;
+        ctx.fillText(`CURRENT: ${this.currentHuidStr}`, 610, 45);
+        ctx.shadowBlur = 0;
+      }
+
+      drawPromptBox(ctx) {
+        const boxX = 35;
+        const boxY = 75;
+        const boxW = 620;
+        const boxH = 230;
+
+        // Prompt Box Container
+        ctx.fillStyle = this.isTrap ? '#1a0606' : '#061406';
+        ctx.fillRect(boxX, boxY, boxW, boxH);
+        ctx.strokeStyle = this.isTrap ? '#ff2222' : '#22cc44';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+        // Subheader
+        ctx.fillStyle = this.isTrap ? '#ff2222' : '#1d8830';
+        ctx.font = 'bold 13px "Courier New", monospace';
+        const bannerText = this.isTrap
+          ? '⚠ HAZARD DETECTED: SUSPICIOUS TASK PROMPT (PRESS [N] TO REJECT!) ⚠'
+          : '⚡ ACTIVE APPROVAL PROMPT (MASH [Y] RAPIDLY FOR HUID COLLISIONS!) ⚡';
+        ctx.fillText(bannerText, boxX + 15, boxY + 28);
+
+        // Task Text (Word-wrapped)
+        ctx.font = 'bold 17px "Courier New", monospace';
+        ctx.fillStyle = this.isTrap ? '#ff9999' : '#ffffff';
+        const taskMsg = this.currentPrompt ? this.currentPrompt.text : 'da_append(&da, item);';
+        this.wrapText(ctx, taskMsg, boxX + 20, boxY + 70, boxW - 40, 24);
+
+        // Prompt Action Text
+        ctx.font = 'bold 16px "Courier New", monospace';
+        if (this.isTrap) {
+          ctx.fillStyle = '#ff4444';
+          ctx.fillText('DO YOU APPROVE? [y/N]  <-- TRAP! MASHING Y RESETS SCORE TO ZERO!', boxX + 20, boxY + 165);
+        } else {
+          ctx.fillStyle = '#33ff33';
+          ctx.fillText('DO YOU APPROVE? [y/N]  <-- MASH [Y] OR SPACEBAR AS FAST AS POSSIBLE!', boxX + 20, boxY + 165);
+        }
+
+        // Live Second Milliseconds Dial / Gauge
+        const barW = boxW - 40;
+        const barH = 16;
+        const barX = boxX + 20;
+        const barY = boxY + 185;
+        const fillW = (this.activeSecondMs / 1000) * barW;
+
+        ctx.fillStyle = '#112211';
+        ctx.fillRect(barX, barY, barW, barH);
+        ctx.strokeStyle = '#227722';
+        ctx.strokeRect(barX, barY, barW, barH);
+
+        // Color shifts as second nears expiration
+        const hue = Math.floor((1 - (this.activeSecondMs / 1000)) * 120);
+        ctx.fillStyle = `hsl(${hue}, 100%, 45%)`;
+        ctx.fillRect(barX + 1, barY + 1, fillW - 2, barH - 2);
+
+        ctx.font = '11px "Courier New", monospace';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(`SECOND WINDOW: ${this.activeSecondMs}ms / 1000ms  |  COLLISIONS IN THIS SEC: ${this.collisionsThisSec}`, barX + 8, barY + 12);
+      }
+
+      drawTelemetry(ctx) {
+        // Right Side Box (Scores & Avatar)
+        const sideX = 670;
+        const sideY = 75;
+        const sideW = 250;
+        const sideH = 230;
+
+        ctx.fillStyle = '#061406';
+        ctx.fillRect(sideX, sideY, sideW, sideH);
+        ctx.strokeStyle = '#22cc44';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(sideX, sideY, sideW, sideH);
+
+        // Draw Tsoding Avatar in the box
+        this.avatar.draw(ctx, sideX + 25, sideY + 25, 3.2);
+
+        // Scores HUD
+        ctx.font = 'bold 14px "Courier New", monospace';
+        ctx.fillStyle = '#88ff88';
+        ctx.fillText(`SCORE:`, sideX + 105, sideY + 35);
+        ctx.font = 'bold 22px "Courier New", monospace';
+        ctx.fillStyle = '#ffea00';
+        ctx.shadowColor = '#ffea00';
+        ctx.shadowBlur = 4;
+        ctx.fillText(this.score.toLocaleString(), sideX + 105, sideY + 62);
+        ctx.shadowBlur = 0;
+
+        ctx.font = 'bold 12px "Courier New", monospace';
+        ctx.fillStyle = '#88ff88';
+        ctx.fillText(`HIGH: ${this.highScore.toLocaleString()}`, sideX + 105, sideY + 86);
+        ctx.fillText(`PEAK RATE: ${this.peakCollisionsPerSec}/s`, sideX + 105, sideY + 106);
+
+        // Point Velocity & Multiplier Gauge
+        ctx.fillStyle = '#082008';
+        ctx.fillRect(sideX + 15, sideY + 140, sideW - 30, 75);
+        ctx.strokeStyle = '#1d8830';
+        ctx.strokeRect(sideX + 15, sideY + 140, sideW - 30, 75);
+
+        ctx.font = 'bold 12px "Courier New", monospace';
+        ctx.fillStyle = '#33ff33';
+        ctx.fillText(`POINT VELOCITY`, sideX + 25, sideY + 160);
+
+        // Velocity Bar
+        const velFill = Math.min(1.0, this.pointVelocity / 15) * (sideW - 50);
+        ctx.fillStyle = '#00ff66';
+        ctx.fillRect(sideX + 25, sideY + 168, velFill, 12);
+
+        ctx.font = 'bold 16px "Courier New", monospace';
+        ctx.fillStyle = '#ffea00';
+        ctx.fillText(`MULTIPLIER: ${this.multiplier.toFixed(1)}x`, sideX + 25, sideY + 204);
+      }
+
+      drawLogs(ctx) {
+        // Lower Terminal Log Box
+        const logX = 35;
+        const logY = 320;
+        const logW = 885;
+        const logH = 230;
+
+        ctx.fillStyle = '#030d03';
+        ctx.fillRect(logX, logY, logW, logH);
+        ctx.strokeStyle = '#1d8830';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(logX, logY, logW, logH);
+
+        // Log Header Bar
+        ctx.fillStyle = '#081c08';
+        ctx.fillRect(logX, logY, logW, 26);
+        ctx.font = 'bold 12px "Courier New", monospace';
+        ctx.fillStyle = '#33ff33';
+        ctx.fillText('TERMINAL AUDIT LOG [LIVE CLOCK STREAM]', logX + 15, logY + 18);
+
+        // Log entries
+        let lineY = logY + 48;
+        ctx.font = '13px "Courier New", monospace';
+        for (const item of this.terminalLogs) {
+          ctx.fillStyle = item.color || '#33ff33';
+          ctx.fillText(`> ${item.text}`, logX + 18, lineY);
+          lineY += 21;
+        }
+
+        // Blinking Terminal Cursor at the end
+        if (Math.floor(Date.now() / 400) % 2 === 0) {
+          ctx.fillStyle = '#33ff33';
+          ctx.fillRect(logX + 18, lineY - 12, 10, 15);
+        }
+      }
+
+      drawLemmings(ctx) {
+        for (const lem of this.lemmings) {
+          lem.draw(ctx);
+        }
+      }
+
+      drawParticles(ctx) {
+        for (const p of this.particles) {
+          p.draw(ctx);
+        }
+      }
+
+      drawButtons(ctx) {
+        for (const btn of this.buttons) {
+          ctx.fillStyle = btn.bg;
+          ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
+          ctx.strokeStyle = btn.color;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
+
+          ctx.font = 'bold 13px "Courier New", monospace';
+          ctx.fillStyle = btn.color;
+          ctx.shadowColor = btn.color;
+          ctx.shadowBlur = 4;
+          const textW = ctx.measureText(btn.text).width;
+          ctx.fillText(btn.text, btn.x + (btn.w - textW) / 2, btn.y + 30);
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      drawHallOfFame(ctx) {
+        ctx.fillStyle = 'rgba(3, 12, 3, 0.95)';
+        ctx.fillRect(40, 80, 880, 460);
+        ctx.strokeStyle = '#00e5ff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(40, 80, 880, 460);
+
+        ctx.font = 'bold 24px "Courier New", monospace';
+        ctx.fillStyle = '#00e5ff';
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 8;
+        ctx.fillText('★ LOCAL HALL OF FAME - TOP 10 TSODING COLLIDERS ★', 75, 125);
+        ctx.shadowBlur = 0;
+
+        ctx.font = 'bold 14px "Courier New", monospace';
+        ctx.fillStyle = '#88ff88';
+        ctx.fillText('RANK   SCORE       PEAK RATE   TOTAL COLL.   DATE (UTC)', 80, 170);
+        ctx.strokeStyle = '#1d8830';
+        ctx.beginPath();
+        ctx.moveTo(80, 180);
+        ctx.lineTo(870, 180);
+        ctx.stroke();
+
+        let rowY = 210;
+        if (this.scoresList.length === 0) {
+          ctx.fillStyle = '#888888';
+          ctx.fillText('No scores recorded yet. Mash [Y] to generate high-speed collisions!', 80, rowY);
+        } else {
+          this.scoresList.forEach((item, idx) => {
+            ctx.fillStyle = (idx === 0) ? '#ffea00' : (idx < 3 ? '#ffffff' : '#33ff33');
+            const rankStr = `#${idx + 1}`.padEnd(6, ' ');
+            const scoreStr = item.score.toLocaleString().padEnd(12, ' ');
+            const rateStr = `${item.peakRate}/s`.padEnd(12, ' ');
+            const collStr = String(item.collisions).padEnd(14, ' ');
+            const dateStr = item.date || '2026-10-11';
+            ctx.fillText(`${rankStr} ${scoreStr} ${rateStr} ${collStr} ${dateStr}`, 80, rowY);
+            rowY += 25;
+          });
+        }
+
+        // Instructions Footer
+        ctx.font = 'bold 15px "Courier New", monospace';
+        ctx.fillStyle = '#ffea00';
+        ctx.fillText('PRESS [H] OR [TAB] TO RETURN TO GAME  |  PRESS [C] TO COPY BRAG / ISSUE SNIPPET', 80, 500);
+      }
+
+      drawScanlines(ctx) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+        for (let y = 0; y < 640; y += 4) {
+          ctx.fillRect(0, y, 960, 2);
+        }
+      }
+
+      wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+        const words = text.split(' ');
+        let line = '';
+        for (let n = 0; n < words.length; n++) {
+          const testLine = line + words[n] + ' ';
+          const metrics = ctx.measureText(testLine);
+          if (metrics.width > maxWidth && n > 0) {
+            ctx.fillText(line, x, y);
+            line = words[n] + ' ';
+            y += lineHeight;
+          } else {
+            line = testLine;
+          }
+        }
+        ctx.fillText(line, x, y);
+      }
+
+      loop(timestamp) {
+        const dt = Math.min((timestamp - this.lastFrameTime) / 1000, 0.1);
+        this.lastFrameTime = timestamp;
+
+        this.update(dt);
+        this.draw();
+
+        requestAnimationFrame((t) => this.loop(t));
+      }
+    }
+
+    // Start Game on Page Load
+    window.addEventListener('load', () => {
+      new HuidGame();
+    });
+  </script>
+</body>
+</html>
