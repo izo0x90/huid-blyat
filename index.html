@@ -757,8 +757,9 @@
           { id: 'btn_no',    key: '[ N ]', label: 'REJECT',  x: 157, y: 638, w: 132, h: 26, keyColor: '#ffffff', actColor: '#ff4455', border: '#3d1c22', badgeBg: '#220c10', bg: '#120508' },
           { id: 'btn_pause', key: '[ P ]', label: 'PAUSE',   x: 294, y: 638, w: 132, h: 26, keyColor: '#ffffff', actColor: '#00e5ff', border: '#163640', badgeBg: '#0d222a', bg: '#061217' },
           { id: 'btn_hof',   key: '[ H ]', label: 'TOP 10',  x: 431, y: 638, w: 132, h: 26, keyColor: '#ffffff', actColor: '#ffea00', border: '#3b3414', badgeBg: '#231e0a', bg: '#131106' },
-          { id: 'btn_title', key: '[ Q ]', label: 'TITLE',   x: 568, y: 638, w: 132, h: 26, keyColor: '#ffffff', actColor: '#ffb300', border: '#3d2b12', badgeBg: '#231808', bg: '#130d04' },
-          { id: 'btn_mute',  key: '[ M ]', label: 'AUDIO',   x: 705, y: 638, w: 135, h: 26, keyColor: '#ffffff', actColor: '#a78bfa', border: '#2d1f4d', badgeBg: '#1b1230', bg: '#0e091a' }
+          { id: 'btn_title', key: '[ Q ]', label: 'TITLE',    x: 568, y: 638, w: 132, h: 26, keyColor: '#ffffff', actColor: '#ffb300', border: '#3d2b12', badgeBg: '#231808', bg: '#130d04' },
+          { id: 'btn_mute',  key: '[ M ]', label: 'AUDIO',    x: 705, y: 638, w: 135, h: 26, keyColor: '#ffffff', actColor: '#a78bfa', border: '#2d1f4d', badgeBg: '#1b1230', bg: '#0e091a' },
+          { id: 'btn_farm',  key: '[ T ]', label: 'SPUD LAB', x: 845, y: 638, w: 135, h: 26, keyColor: '#ffffff', actColor: '#ffca28', border: '#5c430e', badgeBg: '#2e2005', bg: '#1a1203' }
         ];
       }
 
@@ -1100,6 +1101,13 @@
             return;
           }
 
+          if (e.key === 't' || e.key === 'T') {
+            e.preventDefault();
+            if (this.score > 0) this.saveScoreToLeaderboard(false);
+            window.location.href = 'terrarium.html';
+            return;
+          }
+
           // In Title view
           if (this.viewMode === 'title') {
             if (e.key === ' ' || e.key === 'Enter' || e.key === 'y' || e.key === 'Y') {
@@ -1176,6 +1184,10 @@
                 else if (this.viewMode === 'hall_of_fame') this.toggleHallOfFame();
               }
               else if (btn.id === 'btn_mute') this.sound.toggleMute();
+              else if (btn.id === 'btn_farm') {
+                if (this.score > 0) this.saveScoreToLeaderboard(false);
+                window.location.href = 'terrarium.html';
+              }
               return;
             }
           }
@@ -1187,7 +1199,12 @@
           }
 
           if (this.viewMode === 'title') {
-            // Clicking anywhere above buttons starts the game
+            // Clicking the left or right Potato Silo Hatches dives into terrarium.html!
+            if (y >= 540 && y < 630 && (x <= 205 || x >= 795)) {
+              window.location.href = 'terrarium.html';
+              return;
+            }
+            // Clicking anywhere else above buttons starts the game
             if (y < 630) {
               this.startGame();
             }
@@ -1768,6 +1785,22 @@
         ctx.shadowBlur = 12 * startGlow;
         ctx.fillText('▶  PRESS SPACE / ENTER / [ Y ] OR CLICK TO START  ◀', potCenterX, btnBoxY + 28);
         ctx.shadowBlur = 0;
+
+        // --- LEFT & RIGHT UNDERGROUND TERRARIUM SILO HATCHES ---
+        for (const sx of [118, 882]) {
+          ctx.fillStyle = 'rgba(38, 22, 6, 0.92)';
+          ctx.strokeStyle = '#ffca28';
+          ctx.lineWidth = 1.8;
+          ctx.fillRect(sx - 78, 544, 156, 46);
+          ctx.strokeRect(sx - 78, 544, 156, 46);
+
+          ctx.font = 'bold 11px Consolas, Courier, monospace';
+          ctx.fillStyle = '#ffea00';
+          ctx.fillText('🥔 [T] SPUD TERRARIUM', sx, 563);
+          ctx.font = '10px Consolas, Courier, monospace';
+          ctx.fillStyle = '#00e5ff';
+          ctx.fillText('▼ DIVE DOWN SILO ▼', sx, 580);
+        }
 
         ctx.restore();
       }

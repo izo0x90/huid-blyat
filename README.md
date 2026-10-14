@@ -31,6 +31,12 @@ In this game, collisions aren't bugs — they're **features**. Mash `[Y]` as fas
    * Local high scores are automatically preserved in `localStorage`. Press **`[H]`** or click **`[ H: TOP 10 ]`** anytime to view the Hall of Fame.
    * Press **`[C]`** to copy a bragging snippet to share with friends!
 
+7. **TATR: Living Potato Terrarium (`[T]` / `terrarium.html`)**:
+   * Dive down the **Potato Silo Hatch** on the title screen or press **`[T]`** (`[ T: SPUD LAB ]`) to enter the interactive underground **Living Potato Terrarium**.
+   * **Cellular-Automata Soil & Fluid Physics**: Carve tunnels through layered dirt strata, pour flowing water from a draggable raincloud or hose to turn dry soil into fertile mud, and watch buried tubers swell into colossal prize potatoes and Royal King Mega-Tubers.
+   * **Ultra-Miniature Lemming Squad**: 14 tiny articulated lemmings dig chalk-marked tunnels, form daisy-chain tug-of-war lines to yank stubborn rubber-band potato roots out of the mud, and hoist giant spuds overhead Pikmin-style into the Root Cellar.
+   * **Shared Harvest Economy**: Every spud banked in either game shares the same `localStorage` (`tatr_potatoes`) vault!
+
 ---
 
 ## ⌨️ Controls
@@ -40,6 +46,7 @@ In this game, collisions aren't bugs — they're **features**. Mash `[Y]` as fas
 | **Approve / Collide** | `Y`, `Space`, or `Enter` | Click `[ Y: APPROVE & COLLIDE ]` or tap screen |
 | **Reject Trap** | `N`, `Backspace`, or `Escape` | Click `[ N: REJECT TRAP ]` |
 | **Toggle Hall of Fame** | `H` or `Tab` | Click `[ H: TOP 10 ]` |
+| **Open Spud Terrarium** | `T` | Click `[ T: SPUD LAB ]` or Title Silo Hatch |
 | **Toggle Audio** | `M` | Click `[ M: AUDIO ]` |
 | **Copy Score Brag** | `C` | Click on Hall of Fame footer |
 
